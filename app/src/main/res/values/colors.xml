@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#33363F</color>
+    <color name="colorPrimaryDark">#1c54bd</color>
+    <color name="colorAccent">#33363F</color>
+    <color name="grey">#e4dcdc</color>
+    <color name="status_hearing">#33363F</color>
+    <color name="status_not_hearing">#757575</color>
+    <color name="white">#ffffff</color>
+    <color name="maincolor">#AAB7B7</color>
+
+
+    <color name="colorGradientStart">#1E3A8A</color>
+    <color name="colorGradientCenter">#0D7A9F</color>
+    <color name="colorGradientEnd">#00C4B4</color>
+</resources>

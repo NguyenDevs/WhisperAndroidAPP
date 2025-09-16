@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">NguyenDevsSTT</string>
+    <string name="query">query</string>
+    <string name="settings">Cài đặt</string>
+    <string name="language">Ngôn ngữ</string>
+    <string name="commands">Commands</string>
+    <string name="search">Tìm kiếm</string>
+    <string name="stop">Stop</string>
+    <string name="ask_me_anything">Nói bất kỳ thứ gì!</string>
+    <string name="recent">Gần đây</string>
+    <string-array name="languages">
+        <item>Tiếng Việt</item>
+        <item>Tiếng Anh</item>
+    </string-array>
+
+</resources>
