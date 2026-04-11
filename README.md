@@ -53,21 +53,21 @@
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                   Android Client                         │
+│                   Android Client                        │
 │                                                         │
-│   [Ghi âm / Chọn file]  ──►  [Gửi HTTPS Request]      │
+│   [Ghi âm / Chọn file]  ──►  [Gửi HTTPS Request]        │
 │         ▲                                               │
-│         └──────────── [Hiển thị kết quả]               │
+│         └──────────── [Hiển thị kết quả]                │
 └─────────────────────┬───────────────────────────────────┘
                       │  HTTPS (port 8443)
                       │  Multipart/form-data
                       ▼
 ┌─────────────────────────────────────────────────────────┐
-│              Python FastAPI Server                       │
+│              Python FastAPI Server                      │
 │                                                         │
-│   [Nhận file âm thanh]  ──►  [Whisper Model]           │
+│   [Nhận file âm thanh]  ──►  [Whisper Model]            │
 │                                    │                    │
-│   [Trả JSON kết quả]  ◄──  [Nhận diện giọng nói]       │
+│   [Trả JSON kết quả]  ◄──  [Nhận diện giọng nói]        │
 └─────────────────────────────────────────────────────────┘
 ```
 
