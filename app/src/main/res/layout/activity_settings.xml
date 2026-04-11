@@ -13,30 +13,39 @@
     android:orientation="vertical">
 
     <!-- ===== TOOLBAR ===== -->
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/toolbar"
-        style="@style/Widget.App.Toolbar"
+    <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        app:navigationIcon="@drawable/back"
-        app:navigationIconTint="@color/colorOnSurface"
-        app:title="@string/settings"
-        app:titleCentered="true"
-        app:titleTextColor="@color/colorOnSurface">
+        android:layout_height="wrap_content"
+        android:background="@color/colorBackground"
+        android:fitsSystemWindows="true"
+        app:elevation="0dp">
 
-        <!-- About button (right side) -->
-        <ImageButton
-            android:id="@+id/btnAbout"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_gravity="end"
-            android:layout_marginEnd="4dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="About"
-            android:padding="10dp"
-            android:src="@drawable/about"
-            app:tint="@color/colorOnSurfaceVariant" />
-    </com.google.android.material.appbar.MaterialToolbar>
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            style="@style/Widget.App.Toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/colorBackground"
+            app:navigationIcon="@drawable/back"
+            app:navigationIconTint="@color/colorOnSurface"
+            app:title="@string/settings"
+            app:titleCentered="true"
+            app:titleTextColor="@color/colorOnSurface">
+
+            <!-- About button (right side) -->
+            <ImageButton
+                android:id="@+id/btnAbout"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="end"
+                android:layout_marginEnd="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="About"
+                android:padding="10dp"
+                android:src="@drawable/about"
+                app:tint="@color/colorOnSurfaceVariant" />
+        </com.google.android.material.appbar.MaterialToolbar>
+    </com.google.android.material.appbar.AppBarLayout>
 
     <!-- Subtle divider below toolbar -->
     <View
