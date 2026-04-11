@@ -1,9 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    item_history.xml - History item for RecyclerView
-    Migration: history_item_layout.xml → item_history.xml
-    Design: MaterialCardView, compact, premium look
--->
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
