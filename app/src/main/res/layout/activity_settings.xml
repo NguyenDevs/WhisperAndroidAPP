@@ -42,6 +42,7 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="About"
                 android:padding="10dp"
+                android:visibility="gone"
                 android:src="@drawable/about"
               />
         </com.google.android.material.appbar.MaterialToolbar>
