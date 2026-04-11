@@ -18,14 +18,17 @@ import com.nguyendevs.stkh.util.showToast
 import java.util.Locale
 
 /**
- * TextToSpeechManager - Quản lý TTS với highlight từ khi đọc.
- * Migration: Java → Kotlin. Loại bỏ cast (MainActivity) context.
- * Dùng callback lambdas thay thế.
+ * TextToSpeechManager implements ITextToSpeech.
+ *
+ * SOLID:
+ * - SRP: Chỉ lo TTS và word-highlighting, không biết gì về history/server
+ * - LSP: Thay thế bằng MockTtsManager trong test mà không ảnh hưởng consumers
+ * - DIP: Consumers (HistoryManager, ServerCommunicationManager) dùng interface ITextToSpeech
  */
 class TextToSpeechManager(
     private val context: Context,
     private val txtResult: EditText
-) : TextToSpeech.OnInitListener {
+) : TextToSpeech.OnInitListener, ITextToSpeech {
 
     private var textToSpeech: TextToSpeech? = null
     private var detectedLanguage = "Vietnamese"
@@ -145,7 +148,7 @@ class TextToSpeechManager(
         }
     }
 
-    fun setLanguage(langCode: String) {
+    override fun setLanguage(langCode: String) {
         isLanguageManuallySet = true
         val locale = languageToLocaleMap[langCode] ?: run {
             context.showToast("Ngôn ngữ không hỗ trợ: $langCode")
@@ -206,7 +209,7 @@ class TextToSpeechManager(
         }
     }
 
-    fun speakText(text: String) {
+    override fun speakText(text: String) {
         if (textToSpeech == null || text.isEmpty()) return
         makeReadOnly()
         currentText = text
@@ -232,7 +235,7 @@ class TextToSpeechManager(
         isPaused = false
     }
 
-    fun pauseText() {
+    override fun pauseText() {
         if (textToSpeech != null && isSpeaking && !isPaused) {
             textToSpeech?.stop()
             isPaused = true
@@ -258,12 +261,12 @@ class TextToSpeechManager(
         }
     }
 
-    fun setDetectedLanguage(language: String) {
+    override fun setDetectedLanguage(language: String) {
         detectedLanguage = language
         setTextToSpeechLanguage()
     }
 
-    fun updateTtsSettings(speed: Int, pitch: Int) {
+    override fun updateTtsSettings(speed: Int, pitch: Int) {
         speechSpeed = speed
         speechPitch = pitch
         setTextToSpeechLanguage()
@@ -278,7 +281,7 @@ class TextToSpeechManager(
         }
     }
 
-    fun destroy() {
+    override fun destroy() {
         textToSpeech?.apply {
             stop()
             shutdown()

@@ -6,39 +6,45 @@ import android.media.MediaRecorder
 import android.os.Environment
 import android.text.SpannableString
 import android.text.style.StyleSpan
-import android.view.View
 import android.widget.EditText
 import android.widget.ProgressBar
 import com.nguyendevs.stkh.R
+import com.nguyendevs.stkh.util.gone
 import com.nguyendevs.stkh.util.showToast
+import com.nguyendevs.stkh.util.visible
 import java.io.File
 import java.io.IOException
 
 /**
- * AudioRecorderManager - Quản lý ghi âm và phát lại âm thanh.
- * Migration: Java → Kotlin với state management rõ ràng hơn.
+ * AudioRecorderManager implements IAudioRecorder.
+ *
+ * SOLID:
+ * - SRP: Chỉ lo ghi âm và phát âm thanh, không biết gì về server/UI
+ * - LSP: Có thể thay thế bằng MockAudioRecorder trong test mà không ảnh hưởng MainActivity
+ * - DIP: MainActivity phụ thuộc vào IAudioRecorder, không phụ thuộc class cụ thể
  */
 class AudioRecorderManager(
     private val context: Context,
     private val txtResult: EditText,
     private val progressBar: ProgressBar
-) {
+) : IAudioRecorder {
 
     private var mediaRecorder: MediaRecorder? = null
     private var mediaPlayer: MediaPlayer? = null
     private var _audioFile: File? = null
     val audioFile: File? get() = _audioFile
 
-    var isRecording = false
+    override var isRecording: Boolean = false
         private set
 
-    fun startRecording() {
+    override fun startRecording() {
         try {
             txtResult.setText("")
             _audioFile = File(
                 context.getExternalFilesDir(Environment.DIRECTORY_MUSIC),
-                "recording.amr"
+                "recording_${System.currentTimeMillis()}.amr"
             )
+            @Suppress("DEPRECATION")
             mediaRecorder = MediaRecorder().apply {
                 setAudioSource(MediaRecorder.AudioSource.MIC)
                 setOutputFormat(MediaRecorder.OutputFormat.DEFAULT)
@@ -49,42 +55,34 @@ class AudioRecorderManager(
             }
             isRecording = true
             playSound(R.raw.on)
-            progressBar.visibility = View.VISIBLE
+            progressBar.visible()
 
             val hint = "Đang ghi âm…"
-            val spannableHint = SpannableString(hint).apply {
+            txtResult.hint = SpannableString(hint).apply {
                 setSpan(StyleSpan(android.graphics.Typeface.ITALIC), 0, hint.length, 0)
             }
-            txtResult.hint = spannableHint
-
         } catch (e: IOException) {
             context.showToast("Lỗi khi ghi âm: ${e.message}")
         }
     }
 
-    fun stopRecordingAndSendToServer(
-        serverManager: ServerCommunicationManager,
+    override fun stopRecordingAndSendToServer(
+        serverManager: IServerClient,
         onError: () -> Unit
     ) {
         if (mediaRecorder != null && isRecording) {
             try {
-                mediaRecorder?.apply {
-                    stop()
-                    release()
-                }
+                mediaRecorder?.apply { stop(); release() }
                 mediaRecorder = null
                 isRecording = false
                 playSound(R.raw.off)
-                progressBar.visibility = View.GONE
+                progressBar.gone()
 
-                val hint = "Đang chuyển đổi nội dung…"
-                val spannableHint = SpannableString(hint).apply {
+                val hint = "Đang xử lý…"
+                txtResult.hint = SpannableString(hint).apply {
                     setSpan(StyleSpan(android.graphics.Typeface.ITALIC), 0, hint.length, 0)
                 }
-                txtResult.hint = spannableHint
-
                 _audioFile?.let { serverManager.sendAudioToServer(it) }
-
             } catch (e: Exception) {
                 context.showToast("Lỗi khi dừng ghi âm: ${e.message}")
                 onError()
@@ -97,7 +95,7 @@ class AudioRecorderManager(
         mediaPlayer = MediaPlayer.create(context, resId)?.apply { start() }
     }
 
-    fun destroy() {
+    override fun destroy() {
         mediaRecorder?.release()
         mediaRecorder = null
         mediaPlayer?.release()

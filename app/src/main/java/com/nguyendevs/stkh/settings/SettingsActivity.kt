@@ -12,6 +12,8 @@ import com.nguyendevs.stkh.MainActivity
 import com.nguyendevs.stkh.R
 import com.nguyendevs.stkh.database.AppDatabase
 import com.nguyendevs.stkh.databinding.ActivitySettingsBinding
+import com.nguyendevs.stkh.repository.IHistoryRepository
+import com.nguyendevs.stkh.repository.RoomHistoryRepository
 import com.nguyendevs.stkh.util.showToast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -24,7 +26,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySettingsBinding
     private lateinit var prefs: SharedPreferences
-    private lateinit var db: AppDatabase
+    private lateinit var historyRepository: IHistoryRepository   // DIP
 
     private var selectedLanguage = "Vietnamese"
     private var selectedModel = "Medium"
@@ -49,7 +51,7 @@ class SettingsActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-        db = AppDatabase.getInstance(this)
+        historyRepository = RoomHistoryRepository(AppDatabase.getInstance(this))
 
         restoreSettings()
         setupToolbar()
@@ -159,7 +161,7 @@ class SettingsActivity : AppCompatActivity() {
             .setMessage(getString(R.string.dialog_clear_history_msg))
             .setPositiveButton(getString(R.string.action_delete)) { dialog, _ ->
                 lifecycleScope.launch(Dispatchers.IO) {
-                    db.historyDao().clearAll()
+                    historyRepository.clearAll()
                     runOnUiThread {
                         showToast(getString(R.string.toast_history_cleared))
                         dialog.dismiss()

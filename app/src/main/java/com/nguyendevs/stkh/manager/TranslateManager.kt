@@ -14,13 +14,16 @@ import com.google.mlkit.nl.translate.TranslateLanguage
 import com.nguyendevs.stkh.util.showToast
 
 /**
- * TranslateManager - Dịch văn bản bằng ML Kit.
- * Migration: Java → Kotlin. Không còn MainActivity reference.
+ * TranslateManager implements ITranslator.
+ *
+ * SOLID:
+ * - SRP: Chỉ lo detect ngôn ngữ và dịch văn bản
+ * - DIP: Caller chỉ cần biết ITranslator, không phụ thuộc ML Kit
  */
 class TranslateManager(
     private val context: Context,
     private val txtResult: EditText
-) {
+) : ITranslator {
 
     private var translator: Translator? = null
     private var originalTextSnapshot: String? = null
@@ -56,7 +59,7 @@ class TranslateManager(
         )
     }
 
-    fun showTargetLanguagePopup() {
+    override fun showTargetLanguagePopup() {
         val languages = languageDisplayMap.keys.toTypedArray()
         val displayNames = languageDisplayMap.values.toTypedArray()
 
@@ -76,7 +79,7 @@ class TranslateManager(
             .show()
     }
 
-    fun resetOriginalTextSnapshot() {
+    override fun resetOriginalTextSnapshot() {
         originalTextSnapshot = null
     }
 
@@ -142,7 +145,7 @@ class TranslateManager(
             }
     }
 
-    fun destroy() {
+    override fun destroy() {
         translator?.close()
         translator = null
     }

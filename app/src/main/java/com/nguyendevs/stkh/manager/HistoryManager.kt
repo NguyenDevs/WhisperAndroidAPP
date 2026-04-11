@@ -7,10 +7,8 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.core.view.GravityCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.nguyendevs.stkh.adapter.HistoryAdapter
-import com.nguyendevs.stkh.database.AppDatabase
-import com.nguyendevs.stkh.database.HistoryEntity
 import com.nguyendevs.stkh.model.HistoryItem
-import com.nguyendevs.stkh.util.showToast
+import com.nguyendevs.stkh.repository.IHistoryRepository
 import com.nguyendevs.stkh.util.showToastLong
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,52 +23,50 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * HistoryManager - Quản lý lịch sử với Room + Coroutines.
- * - Không còn raw SQLite: sử dụng db.historyDao()
- * - Flow từ Room → tự động cập nhật RecyclerView
- * - Tất cả DB operations chạy trên Dispatchers.IO
+ * HistoryManager - Nghiệp vụ quản lý lịch sử và điều phối UI.
+ *
+ * SOLID:
+ * - SRP: Chỉ lo orchestrate history-related UI actions
+ * - DIP: Phụ thuộc vào IHistoryRepository, ITextToSpeech, ITranslator (interfaces), không phụ thuộc Room/TTS cụ thể
+ * - ISP: Nhận đúng interface mà nó cần, không nhận toàn bộ AppDatabase
  */
 class HistoryManager(
     private val context: Context,
-    private val db: AppDatabase,
+    private val repository: IHistoryRepository,        // DIP
     private val txtResult: EditText,
     private val drawerLayout: DrawerLayout,
     val historyAdapter: HistoryAdapter,
-    private val textToSpeechManager: TextToSpeechManager,
-    private val translateManager: TranslateManager,
+    private val ttsManager: ITextToSpeech,             // DIP
+    private val translator: ITranslator,               // DIP
     private val permissionManager: PermissionManager,
     private val lifecycleScope: CoroutineScope
 ) {
 
     private var editingLang = "unknown"
 
-    // Callbacks ra ngoài MainActivity để update UI
+    // Callbacks để update UI từ MainActivity → HistoryManager không import MainActivity
     var onHistoryCountChanged: ((count: Int) -> Unit)? = null
     var onSaveButtonShow: ((visible: Boolean) -> Unit)? = null
     var onTtsControlsShow: ((visible: Boolean) -> Unit)? = null
     var onCopyRequest: ((text: String) -> Unit)? = null
     var onShowSnackbar: ((message: String) -> Unit)? = null
 
-    /** Gọi lần đầu để đăng ký Flow lắng nghe tự động từ Room */
+    /** Đăng ký collect Room Flow → tự động update adapter */
     fun observeHistory() {
         lifecycleScope.launch {
-            db.historyDao().getAllHistory().collect { entities ->
-                val items = entities.map { HistoryItem.fromEntity(it) }
+            repository.observeAll().collect { items ->
                 historyAdapter.submitList(items)
                 onHistoryCountChanged?.invoke(items.size)
             }
         }
     }
 
-    /** Lưu nội dung đã chỉnh sửa */
     fun saveEditedContent() {
-        translateManager.resetOriginalTextSnapshot()
-        val editedContent = txtResult.text.toString().trim()
-        if (editedContent.isNotEmpty()) {
+        translator.resetOriginalTextSnapshot()
+        val content = txtResult.text.toString().trim()
+        if (content.isNotEmpty()) {
             lifecycleScope.launch(Dispatchers.IO) {
-                db.historyDao().insert(
-                    HistoryEntity(content = editedContent, lang = editingLang)
-                )
+                repository.insert(content, editingLang)
                 withContext(Dispatchers.Main) {
                     onShowSnackbar?.invoke("Đã lưu nội dung!")
                     onTtsControlsShow?.invoke(true)
@@ -83,11 +79,9 @@ class HistoryManager(
         onSaveButtonShow?.invoke(false)
     }
 
-    // ============ Callbacks từ Adapter ============
+    // ============ Adapter callbacks ============
 
-    fun onItemClick(item: HistoryItem) {
-        showHistoryDetail(item)
-    }
+    fun onItemClick(item: HistoryItem) = showHistoryDetail(item)
 
     fun onMenuCopy(item: HistoryItem) {
         onCopyRequest?.invoke(item.content)
@@ -95,46 +89,40 @@ class HistoryManager(
     }
 
     fun onMenuView(item: HistoryItem) {
-        translateManager.resetOriginalTextSnapshot()
+        translator.resetOriginalTextSnapshot()
         txtResult.setText(item.content)
         setReadOnly()
         onTtsControlsShow?.invoke(true)
-        drawerLayout.closeDrawer(GravityCompat.START)
         editingLang = item.lang
-        textToSpeechManager.setLanguage(item.lang)
+        ttsManager.setLanguage(item.lang)
+        drawerLayout.closeDrawer(GravityCompat.START)
     }
 
     fun onMenuEdit(item: HistoryItem) {
-        translateManager.resetOriginalTextSnapshot()
+        translator.resetOriginalTextSnapshot()
         txtResult.setText(item.content)
         setEditable()
         onSaveButtonShow?.invoke(true)
-        drawerLayout.closeDrawer(GravityCompat.START)
         editingLang = item.lang
-        textToSpeechManager.setLanguage(item.lang)
+        ttsManager.setLanguage(item.lang)
+        drawerLayout.closeDrawer(GravityCompat.START)
     }
 
     fun onMenuDelete(item: HistoryItem) {
         lifecycleScope.launch(Dispatchers.IO) {
-            db.historyDao().delete(item.toEntity())
-            withContext(Dispatchers.Main) {
-                onShowSnackbar?.invoke("Đã xóa mục lịch sử")
-            }
+            repository.delete(item)
+            withContext(Dispatchers.Main) { onShowSnackbar?.invoke("Đã xóa mục lịch sử") }
         }
     }
 
     fun onMenuExport(item: HistoryItem) {
-        permissionManager.checkWriteStoragePermission {
-            showExportFormatDialog(item)
-        }
+        permissionManager.checkWriteStoragePermission { showExportFormatDialog(item) }
     }
 
     fun clearAllHistory() {
         lifecycleScope.launch(Dispatchers.IO) {
-            db.historyDao().clearAll()
-            withContext(Dispatchers.Main) {
-                onShowSnackbar?.invoke("Đã xóa toàn bộ lịch sử")
-            }
+            repository.clearAll()
+            withContext(Dispatchers.Main) { onShowSnackbar?.invoke("Đã xóa toàn bộ lịch sử") }
         }
     }
 
@@ -143,19 +131,7 @@ class HistoryManager(
     private fun showHistoryDetail(item: HistoryItem) {
         val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
         val formattedDate = sdf.format(Date(item.date))
-        val langDisplay = when (item.lang) {
-            "Vietnamese" -> "Tiếng Việt"
-            "English" -> "Tiếng Anh"
-            "Japanese" -> "Tiếng Nhật"
-            "Russian" -> "Tiếng Nga"
-            "French" -> "Tiếng Pháp"
-            "Spanish" -> "Tiếng Tây Ban Nha"
-            "German" -> "Tiếng Đức"
-            "Chinese" -> "Tiếng Trung"
-            "Korean" -> "Tiếng Hàn"
-            "Italian" -> "Tiếng Ý"
-            else -> item.lang
-        }
+        val langDisplay = LANG_DISPLAY_MAP[item.lang] ?: item.lang
         val message = "${item.content}\n\n🌐 Ngôn ngữ: $langDisplay\n🕐 Lưu lúc: $formattedDate"
 
         MaterialAlertDialogBuilder(context)
@@ -164,8 +140,8 @@ class HistoryManager(
             .setPositiveButton("Đóng") { d, _ -> d.dismiss() }
             .setNeutralButton("Đọc lại") { _, _ ->
                 editingLang = item.lang
-                textToSpeechManager.setLanguage(item.lang)
-                textToSpeechManager.speakText(item.content)
+                ttsManager.setLanguage(item.lang)
+                ttsManager.speakText(item.content)
             }
             .show()
     }
@@ -175,11 +151,10 @@ class HistoryManager(
         MaterialAlertDialogBuilder(context)
             .setTitle("Xuất file lịch sử")
             .setItems(formats) { _, which ->
-                val ts = item.date.toString()
-                val fileName = "History_$ts${if (which == 0) ".txt" else ".docx"}"
-                val directory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                directory.mkdirs()
-                val file = File(directory, fileName)
+                val fileName = "History_${item.date}${if (which == 0) ".txt" else ".docx"}"
+                val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                dir.mkdirs()
+                val file = File(dir, fileName)
                 if (which == 0) exportAsTxt(file, item.content)
                 else exportAsDocx(file, item.content)
             }
@@ -187,49 +162,44 @@ class HistoryManager(
             .show()
     }
 
-    private fun exportAsTxt(file: File, content: String) {
-        try {
-            file.writeText(content, Charsets.UTF_8)
-            onShowSnackbar?.invoke("Đã xuất: ${file.name}")
-        } catch (e: Exception) {
-            onShowSnackbar?.invoke("Lỗi xuất file: ${e.message}")
-        }
-    }
+    private fun exportAsTxt(file: File, content: String) =
+        runCatching { file.writeText(content, Charsets.UTF_8); onShowSnackbar?.invoke("Đã xuất: ${file.name}") }
+            .onFailure { onShowSnackbar?.invoke("Lỗi xuất file: ${it.message}") }
 
     private fun exportAsDocx(file: File, content: String) {
         val document = XWPFDocument()
         try {
-            val paragraph = document.createParagraph()
-            paragraph.createRun().setText(content)
+            document.createParagraph().createRun().setText(content)
             FileOutputStream(file).use { document.write(it) }
             onShowSnackbar?.invoke("Đã xuất: ${file.name}")
         } catch (e: IOException) {
             onShowSnackbar?.invoke("Lỗi xuất file: ${e.message}")
-        } finally {
-            runCatching { document.close() }
-        }
+        } finally { runCatching { document.close() } }
     }
 
     private fun setReadOnly() {
         txtResult.apply {
-            isFocusable = false
-            isFocusableInTouchMode = false
-            isCursorVisible = false
-            isLongClickable = false
-            keyListener = null
+            isFocusable = false; isFocusableInTouchMode = false
+            isCursorVisible = false; isLongClickable = false; keyListener = null
         }
     }
 
     private fun setEditable() {
         txtResult.apply {
-            isEnabled = true
-            isFocusable = true
-            isFocusableInTouchMode = true
-            isCursorVisible = true
-            isLongClickable = true
-            // Khôi phục key listener mặc định
+            isEnabled = true; isFocusable = true; isFocusableInTouchMode = true
+            isCursorVisible = true; isLongClickable = true
             keyListener = android.text.method.TextKeyListener.getInstance()
             requestFocus()
         }
+    }
+
+    companion object {
+        private val LANG_DISPLAY_MAP = mapOf(
+            "Vietnamese" to "Tiếng Việt", "English" to "Tiếng Anh",
+            "Japanese" to "Tiếng Nhật", "Russian" to "Tiếng Nga",
+            "French" to "Tiếng Pháp", "Spanish" to "Tiếng Tây Ban Nha",
+            "German" to "Tiếng Đức", "Chinese" to "Tiếng Trung",
+            "Korean" to "Tiếng Hàn", "Italian" to "Tiếng Ý"
+        )
     }
 }

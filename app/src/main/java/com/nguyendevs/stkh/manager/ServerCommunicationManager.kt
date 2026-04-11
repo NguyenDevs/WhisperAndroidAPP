@@ -8,8 +8,8 @@ import android.util.Log
 import android.widget.EditText
 import android.widget.ProgressBar
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.nguyendevs.stkh.database.AppDatabase
 import com.nguyendevs.stkh.database.HistoryEntity
+import com.nguyendevs.stkh.repository.IHistoryRepository
 import com.nguyendevs.stkh.util.gone
 import com.nguyendevs.stkh.util.showToast
 import com.nguyendevs.stkh.util.visible
@@ -35,30 +35,30 @@ import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 
 /**
- * ServerCommunicationManager - Giao tiếp với server Whisper qua HTTPS.
- * - Dùng Kotlin Coroutines (Dispatchers.IO) thay new Thread()
- * - Dùng Room DAO thay DatabaseHelper trực tiếp
- * - Dùng callback để tránh cast context → MainActivity
+ * ServerCommunicationManager implements IServerClient.
+ *
+ * SOLID:
+ * - SRP: Chỉ lo giao tiếp server (network, SSL) và lưu kết quả vào repository
+ * - DIP: Phụ thuộc vào IHistoryRepository (abstraction), không phụ thuộc AppDatabase/Room trực tiếp
+ *       Phụ thuộc vào ITextToSpeech thay vì TextToSpeechManager cụ thể
+ * - OCP: Dễ swap sang RemoteHistoryRepository hoặc mock trong test
  */
 class ServerCommunicationManager(
     private val context: Context,
     private val txtResult: EditText,
     private val progressBar: ProgressBar,
-    private val db: AppDatabase,
-    private val textToSpeechManager: TextToSpeechManager,
+    private val historyRepository: IHistoryRepository,   // DIP: interface, không phải AppDatabase
+    private val ttsManager: ITextToSpeech,               // DIP: interface, không phải TextToSpeechManager
     private val lifecycleScope: CoroutineScope
-) {
+) : IServerClient {
 
     companion object {
         private const val TAG = "ServerCommunicationManager"
     }
 
-    /** Gọi khi transcription thành công: (text, detectedLanguage) */
     var onTranscriptionSuccess: ((text: String, language: String) -> Unit)? = null
-    /** Gọi khi có lỗi (để enable lại mic button) */
     var onTranscriptionError: (() -> Unit)? = null
-    /** Gọi để mở file picker (Activity Result API từ MainActivity) */
-    var onShowFilePicker: (() -> Unit)? = null
+    override var onShowFilePicker: (() -> Unit)? = null
 
     private val client: OkHttpClient by lazy { buildOkHttpClient() }
 
@@ -85,7 +85,7 @@ class ServerCommunicationManager(
         }
     }
 
-    fun sendAudioToServer(file: File) {
+    override fun sendAudioToServer(file: File) {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val prefs = context.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
@@ -114,27 +114,21 @@ class ServerCommunicationManager(
 
                 client.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) throw IOException("Server error: ${response.code}")
-                    val body = response.body?.string() ?: throw IOException("Empty response body")
+                    val body = response.body?.string() ?: throw IOException("Empty response")
                     val json = JSONObject(body)
                     val transcribedText = json.getString("text")
                     val detectedLanguage = json.getString("language")
 
-                    // Lưu vào Room DB trên IO thread
-                    db.historyDao().insert(
-                        HistoryEntity(
-                            content = transcribedText,
-                            date = System.currentTimeMillis(),
-                            lang = detectedLanguage
-                        )
-                    )
+                    // Dùng IHistoryRepository (DIP) - không phụ thuộc Room cụ thể
+                    historyRepository.insert(transcribedText, detectedLanguage)
 
                     withContext(Dispatchers.Main) {
-                        textToSpeechManager.setDetectedLanguage(detectedLanguage)
+                        ttsManager.setDetectedLanguage(detectedLanguage)
                         progressBar.gone()
                         txtResult.setText(transcribedText)
                         onTranscriptionSuccess?.invoke(transcribedText, detectedLanguage)
                         if (transcribedText.isNotEmpty()) {
-                            textToSpeechManager.speakText(transcribedText)
+                            ttsManager.speakText(transcribedText)
                         }
                     }
                 }
@@ -151,18 +145,14 @@ class ServerCommunicationManager(
         }
     }
 
-    /** Gọi callback để MainActivity mở file picker (Activity Result API) */
-    fun showAudioFilePicker() {
+    override fun showAudioFilePicker() {
         onShowFilePicker?.invoke()
     }
 
-    /** Xử lý URI audio được chọn từ file picker */
-    fun handlePickedAudio(uri: Uri) {
+    override fun handlePickedAudio(uri: Uri) {
         lifecycleScope.launch(Dispatchers.IO) {
             val fileName = getFileNameFromUri(uri)
-            withContext(Dispatchers.Main) {
-                confirmAndSendAudio(uri, fileName)
-            }
+            withContext(Dispatchers.Main) { confirmAndSendAudio(uri, fileName) }
         }
     }
 
@@ -196,14 +186,10 @@ class ServerCommunicationManager(
                                     setSpan(StyleSpan(android.graphics.Typeface.ITALIC), 0, hint.length, 0)
                                 }
                                 sendAudioToServer(tempFile)
-                            } else {
-                                context.showToast("File không tồn tại!")
-                            }
+                            } else { context.showToast("File không tồn tại!") }
                         }
                     } catch (e: IOException) {
-                        withContext(Dispatchers.Main) {
-                            context.showToast("Lỗi xử lý file: ${e.message}")
-                        }
+                        withContext(Dispatchers.Main) { context.showToast("Lỗi xử lý file: ${e.message}") }
                     }
                 }
             }
@@ -214,16 +200,11 @@ class ServerCommunicationManager(
     @Throws(IOException::class)
     private fun createTempFileFromUri(uri: Uri, fileName: String): File {
         val tempFile = File(
-            context.getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC),
-            fileName
+            context.getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC), fileName
         )
         val input: InputStream = context.contentResolver.openInputStream(uri)
             ?: throw IOException("Cannot open URI")
-        input.use { i ->
-            FileOutputStream(tempFile).use { o ->
-                i.copyTo(o, bufferSize = 8192)
-            }
-        }
+        input.use { i -> FileOutputStream(tempFile).use { o -> i.copyTo(o, 8192) } }
         return tempFile
     }
 }
