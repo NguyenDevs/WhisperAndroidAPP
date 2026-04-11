@@ -14,6 +14,7 @@ import com.nguyendevs.stkh.database.AppDatabase
 import com.nguyendevs.stkh.databinding.ActivitySettingsBinding
 import com.nguyendevs.stkh.repository.IHistoryRepository
 import com.nguyendevs.stkh.repository.RoomHistoryRepository
+import com.nguyendevs.stkh.util.LanguageConstants
 import com.nguyendevs.stkh.util.showToast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -30,14 +31,6 @@ class SettingsActivity : AppCompatActivity() {
     private var speechPitch = 50
 
     companion object {
-        private val DISPLAY_LANGUAGES = arrayOf(
-            "Tự động", "Tiếng Việt", "English", "Japanese",
-            "Russian", "French", "Spanish", "German", "Chinese", "Korean", "Italian"
-        )
-        private val WHISPER_LANGUAGES = arrayOf(
-            "Auto", "Vietnamese", "English", "Japanese",
-            "Russian", "French", "Spanish", "German", "Chinese", "Korean", "Italian"
-        )
         private val MODELS = arrayOf("Small", "Medium", "Large")
     }
 
@@ -73,11 +66,11 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun setupLanguageSpinner() {
         binding.spinnerLanguage.adapter = ArrayAdapter(
-            this, android.R.layout.simple_spinner_dropdown_item, DISPLAY_LANGUAGES
+            this, android.R.layout.simple_spinner_dropdown_item, LanguageConstants.DISPLAY_LANGUAGES
         )
-        binding.spinnerLanguage.setSelection(WHISPER_LANGUAGES.indexOf(selectedLanguage).coerceAtLeast(0))
+        binding.spinnerLanguage.setSelection(LanguageConstants.WHISPER_LANGUAGES.indexOf(selectedLanguage).coerceAtLeast(0))
         binding.spinnerLanguage.onItemSelectedListener = simpleItemSelectedListener { pos ->
-            selectedLanguage = WHISPER_LANGUAGES[pos]
+            selectedLanguage = LanguageConstants.WHISPER_LANGUAGES[pos]
             prefs.edit().putString("selectedLanguage", selectedLanguage).apply()
         }
     }
