@@ -20,6 +20,7 @@ import com.nguyendevs.stkh.databinding.ActivityMainBinding
 import com.nguyendevs.stkh.manager.*
 import com.nguyendevs.stkh.repository.RoomHistoryRepository
 import com.nguyendevs.stkh.settings.SettingsActivity
+import com.nguyendevs.stkh.util.LanguageConstants
 import com.nguyendevs.stkh.util.*
 
 class MainActivity : AppCompatActivity() {
@@ -53,6 +54,7 @@ class MainActivity : AppCompatActivity() {
         historyManager.observeHistory()
         permissionManager.checkAudioPermission()
         permissionManager.checkStoragePermission()
+        updateLanguageChip()
     }
 
     /** Khởi tạo và inject toàn bộ dependencies (Composition Root). */
@@ -84,10 +86,11 @@ class MainActivity : AppCompatActivity() {
             lifecycleScope = lifecycleScope
         ).also { mgr ->
             mgr as ServerCommunicationManager
-            mgr.onTranscriptionSuccess = { _, _ ->
+            mgr.onTranscriptionSuccess = { _, lang ->
                 binding.cardTtsControls.visible()
                 binding.cardTtsControls.startAnimation(AnimationUtils.loadAnimation(this, R.anim.fade_in))
                 binding.btnMic.isEnabled = true
+                updateLanguageChip(lang)
             }
             mgr.onTranscriptionError = {
                 binding.btnMic.isEnabled = true
@@ -122,7 +125,7 @@ class MainActivity : AppCompatActivity() {
             mgr.onSaveButtonShow = { v -> if (v) binding.layoutSave.visible() else binding.layoutSave.gone() }
             mgr.onTtsControlsShow = { v -> if (v) binding.cardTtsControls.visible() else binding.cardTtsControls.gone() }
             mgr.onCopyRequest = { text -> utilityManager.copyToClipboard(text) }
-            mgr.onShowSnackbar = { msg -> showSnackbar(msg) }
+            mgr.onShowSnackbar = { msg -> showPremiumMessage(msg) }
         }
 
         utilityManager = UtilityManager(this, binding.txtResult)
@@ -138,12 +141,21 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupUiInitialState() {
         binding.txtResult.apply {
+            setText("")
             isFocusable = false; isCursorVisible = false; isLongClickable = false; keyListener = null
         }
         setResultHint(getString(R.string.ask_me_anything))
+        updateLanguageChip() // Ensure chip is initialized
         binding.cardTtsControls.gone()
         binding.layoutSave.gone()
         binding.progressBar.gone()
+    }
+
+    private fun resetToInitialState() {
+        ttsManager.pauseText()
+        translator.resetOriginalTextSnapshot()
+        setupUiInitialState()
+        setResultHint(getString(R.string.ask_me_anything))
     }
 
     private fun setupListeners() {
@@ -160,8 +172,8 @@ class MainActivity : AppCompatActivity() {
         }
         binding.btnCopy.setOnClickListener {
             val text = binding.txtResult.text.toString()
-            if (text.isNotEmpty()) { utilityManager.copyToClipboard(text); showSnackbar("Đã sao chép!") }
-            else showSnackbar("Không có nội dung để sao chép")
+            if (text.isNotEmpty()) { utilityManager.copyToClipboard(text); showPremiumMessage("Đã sao chép!") }
+            else showPremiumMessage("Không có nội dung để sao chép")
         }
         binding.btnShare.setOnClickListener { utilityManager.shareText() }
         binding.btnSearch.setOnClickListener { utilityManager.searchOnGoogle() }
@@ -184,6 +196,8 @@ class MainActivity : AppCompatActivity() {
             override fun handleOnBackPressed() {
                 if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
                     binding.drawerLayout.closeDrawer(GravityCompat.START)
+                } else if (!binding.txtResult.text.isNullOrEmpty()) {
+                    resetToInitialState()
                 } else {
                     isEnabled = false
                     onBackPressedDispatcher.onBackPressed()
@@ -235,13 +249,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun showSnackbar(message: String, duration: Int = Snackbar.LENGTH_SHORT) {
-        Snackbar.make(binding.root, message, duration)
-            .setBackgroundTint(ContextCompat.getColor(this, R.color.colorSurface))
-            .setTextColor(ContextCompat.getColor(this, R.color.colorOnSurface))
-            .setActionTextColor(ContextCompat.getColor(this, R.color.colorAccent))
-            .show()
-    }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
@@ -252,11 +259,19 @@ class MainActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         if (intent.getBooleanExtra("fromSettings", false)) {
-            intent.getStringExtra("selectedLanguage")?.let { ttsManager.setDetectedLanguage(it) }
+            val selectedLang = intent.getStringExtra("selectedLanguage")
+            selectedLang?.let { ttsManager.setDetectedLanguage(it) }
+            updateLanguageChip()
+            
             val speed = intent.getIntExtra("speechSpeed", -1)
             val pitch = intent.getIntExtra("speechPitch", -1)
             if (speed >= 0 && pitch >= 0) ttsManager.updateTtsSettings(speed, pitch)
         }
+    }
+
+    private fun updateLanguageChip(detectedLang: String? = null) {
+        val selectedLang = detectedLang ?: prefs.getString("selectedLanguage", "Vietnamese")
+        binding.chipLanguage.text = LanguageConstants.getDisplayName(selectedLang)
     }
 
     override fun onDestroy() {
