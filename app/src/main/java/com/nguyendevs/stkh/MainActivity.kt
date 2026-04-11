@@ -145,7 +145,7 @@ class MainActivity : AppCompatActivity() {
             isFocusable = false; isCursorVisible = false; isLongClickable = false; keyListener = null
         }
         setResultHint(getString(R.string.ask_me_anything))
-        updateLanguageChip() // Ensure chip is initialized
+        updateLanguageChip() 
         binding.cardTtsControls.gone()
         binding.layoutSave.gone()
         binding.progressBar.gone()
