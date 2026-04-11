@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- === PRIMARY BRAND === -->
+    <color name="colorPrimary">#6C63FF</color>
+    <color name="colorPrimaryVariant">#4B44CC</color>
+    <color name="colorOnPrimary">#FFFFFF</color>
+
+    <!-- === BACKGROUND / SURFACE === -->
+    <color name="colorBackground">#0D0D1A</color>
+    <color name="colorSurface">#1A1A2E</color>
+    <color name="colorSurfaceVariant">#252540</color>
+    <color name="colorSurfaceElevated">#1E1E35</color>
+
+    <!-- === ACCENT / SECONDARY === -->
+    <color name="colorAccent">#00D4AA</color>
+    <color name="colorSecondary">#A78BFA</color>
+    <color name="colorTertiary">#38BDF8</color>
+
+    <!-- === ERROR === -->
+    <color name="colorError">#FF6B6B</color>
+    <color name="colorOnError">#FFFFFF</color>
+
+    <!-- === TEXT === -->
+    <color name="colorOnBackground">#E8E8FF</color>
+    <color name="colorOnSurface">#C8C8E8</color>
+    <color name="colorOnSurfaceVariant">#9090B8</color>
+    <color name="colorHint">#5A5A80</color>
+
+    <!-- === DIVIDER / OUTLINE === -->
+    <color name="colorOutline">#2E2E50</color>
+    <color name="colorDivider">#252545</color>
+
+    <!-- === RECORDING STATE === -->
+    <color name="colorRecording">#FF4757</color>
+    <color name="colorRecordingGlow">#80FF4757</color>
+
+    <!-- === MISC (kept for compatibility) === -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="colorPrimaryDark">#6C63FF</color>
+
+    <!-- === GRADIENT (Drawer header, background) === -->
+    <color name="colorGradientStart">#0D0D1A</color>
+    <color name="colorGradientCenter">#16163A</color>
+    <color name="colorGradientEnd">#1A1A4E</color>
+
+    <!-- === CARD OVERLAY === -->
+    <color name="colorCardOverlay">#CC1A1A2E</color>
+    <color name="colorRipple">#266C63FF</color>
+</resources>

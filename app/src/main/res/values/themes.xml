@@ -1,7 +1,7 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- ===== BASE THEME (dark-first, Material3) ===== -->
-    <style name="Base.AppTheme" parent="Theme.Material3.Dark.NoActionBar">
+    <!-- ===== BASE THEME (DayNight, Material3) ===== -->
+    <style name="Base.AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Color System -->
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorOnPrimary">@color/colorOnPrimary</item>
@@ -24,7 +24,7 @@
 
         <item name="android:statusBarColor">@color/colorBackground</item>
         <item name="android:navigationBarColor">@color/colorSurface</item>
-        <item name="android:windowLightStatusBar" tools:targetApi="m">false</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
     </style>
 
     <!-- Main App Theme -->
