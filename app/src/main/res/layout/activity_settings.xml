@@ -43,7 +43,7 @@
                 android:contentDescription="About"
                 android:padding="10dp"
                 android:src="@drawable/about"
-                app:tint="@color/colorOnSurfaceVariant" />
+              />
         </com.google.android.material.appbar.MaterialToolbar>
     </com.google.android.material.appbar.AppBarLayout>
 
