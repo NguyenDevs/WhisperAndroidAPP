@@ -1,16 +1,70 @@
 <resources>
-    <string name="app_name">NguyenDevsSTT</string>
+    <string name="app_name">NguyenDevs STT</string>
     <string name="query">query</string>
     <string name="settings">Cài đặt</string>
     <string name="language">Ngôn ngữ</string>
     <string name="commands">Commands</string>
     <string name="search">Tìm kiếm</string>
-    <string name="stop">Stop</string>
-    <string name="ask_me_anything">Nói bất kỳ thứ gì!</string>
+    <string name="stop">Dừng</string>
+    <string name="ask_me_anything">Nói bất kỳ thứ gì\u2026</string>
     <string name="recent">Gần đây</string>
+    <string name="recording">Đang ghi âm\u2026</string>
+    <string name="processing">Đang xử lý\u2026</string>
+
+    <!-- Settings labels -->
+    <string name="label_model">Mô hình AI</string>
+    <string name="label_speech_speed">Tốc độ đọc</string>
+    <string name="label_speech_pitch">Cao độ giọng</string>
+    <string name="label_server_ip">Địa chỉ máy chủ</string>
+    <string name="label_clear_history">Xóa lịch sử</string>
+    <string name="label_reset">Reset mặc định</string>
+    <string name="label_about">Về chúng tôi</string>
+    <string name="hint_server_ip">Nhập địa chỉ IP máy chủ</string>
+
+    <!-- History -->
+    <string name="history_title">Lịch sử</string>
+    <string name="history_empty">Chưa có lịch sử nào</string>
+    <string name="history_copy">Sao chép</string>
+    <string name="history_view">Xem</string>
+    <string name="history_edit">Sửa</string>
+    <string name="history_delete">Xóa</string>
+    <string name="history_export">Xuất file</string>
+
+    <!-- Dialog messages -->
+    <string name="dialog_clear_history_title">Xác nhận xóa lịch sử</string>
+    <string name="dialog_clear_history_msg">Bạn có chắc chắn muốn xóa toàn bộ lịch sử không? Hành động này không thể hoàn tác.</string>
+    <string name="dialog_reset_title">Xác nhận reset cài đặt</string>
+    <string name="dialog_reset_msg">Bạn có chắc chắn muốn reset về cài đặt mặc định không?</string>
+    <string name="dialog_export_title">Chọn định dạng xuất file?</string>
+    <string name="dialog_about_title">Về chúng tôi</string>
+    <string name="dialog_about_msg">Ứng dụng được phát triển bởi NguyenDevs.\nChức năng nhận diện giọng nói thành văn bản.\nTích hợp mô hình AI Whisper của OpenAI.</string>
+
+    <!-- Action labels -->
+    <string name="action_ok">OK</string>
+    <string name="action_cancel">Hủy</string>
+    <string name="action_delete">Xóa</string>
+    <string name="action_reset">Reset</string>
+    <string name="action_save">Lưu</string>
+
+    <!-- Toast messages -->
+    <string name="toast_copied">Đã sao chép vào clipboard!</string>
+    <string name="toast_no_content_copy">Không có nội dung để sao chép!</string>
+    <string name="toast_no_content_share">Không có nội dung để chia sẻ!</string>
+    <string name="toast_no_content_search">Không có nội dung để tìm kiếm!</string>
+    <string name="toast_history_cleared">Đã xóa toàn bộ lịch sử</string>
+    <string name="toast_history_deleted">Đã xóa lịch sử!</string>
+    <string name="toast_saved">Đã lưu nội dung chỉnh sửa!</string>
+    <string name="toast_empty_save">Nội dung trống, không thể lưu!</string>
+    <string name="toast_reset_done">Đã reset về cài đặt mặc định</string>
+    <string name="toast_record_permission_denied">Quyền ghi âm bị từ chối!</string>
+    <string name="toast_storage_permission_denied">Quyền truy cập bộ nhớ bị từ chối!</string>
+    <string name="toast_write_permission_denied">Quyền ghi bộ nhớ bị từ chối!</string>
+    <string name="toast_invalid_server">Địa chỉ server không hợp lệ!</string>
+    <string name="toast_tts_init_failed">Khởi tạo TextToSpeech thất bại!</string>
+    <string name="toast_no_translate_content">Không có nội dung để dịch.</string>
+
     <string-array name="languages">
         <item>Tiếng Việt</item>
         <item>Tiếng Anh</item>
     </string-array>
-
 </resources>

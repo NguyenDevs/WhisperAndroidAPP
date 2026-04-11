@@ -1,16 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#33363F</color>
-    <color name="colorPrimaryDark">#1c54bd</color>
-    <color name="colorAccent">#33363F</color>
-    <color name="grey">#e4dcdc</color>
-    <color name="status_hearing">#33363F</color>
-    <color name="status_not_hearing">#757575</color>
-    <color name="white">#ffffff</color>
-    <color name="maincolor">#AAB7B7</color>
+    <!-- === PRIMARY BRAND === -->
+    <color name="colorPrimary">#6C63FF</color>
+    <color name="colorPrimaryVariant">#EDE9FE</color>
+    <color name="colorOnPrimary">#FFFFFF</color>
 
+    <!-- === BACKGROUND / SURFACE === -->
+    <color name="colorBackground">#F5F5FA</color>
+    <color name="colorSurface">#FFFFFF</color>
+    <color name="colorSurfaceVariant">#EEF0F8</color>
+    <color name="colorSurfaceElevated">#F0EDFF</color>
 
-    <color name="colorGradientStart">#1E3A8A</color>
-    <color name="colorGradientCenter">#0D7A9F</color>
-    <color name="colorGradientEnd">#00C4B4</color>
+    <!-- === ACCENT / SECONDARY === -->
+    <color name="colorAccent">#00B89C</color>
+    <color name="colorSecondary">#7C5CFC</color>
+    <color name="colorTertiary">#0EA5E9</color>
+
+    <!-- === ERROR === -->
+    <color name="colorError">#DC2626</color>
+    <color name="colorOnError">#FFFFFF</color>
+
+    <!-- === TEXT === -->
+    <color name="colorOnBackground">#1A1A2E</color>
+    <color name="colorOnSurface">#2D2D44</color>
+    <color name="colorOnSurfaceVariant">#5C5C80</color>
+    <color name="colorHint">#9898B8</color>
+
+    <!-- === DIVIDER / OUTLINE === -->
+    <color name="colorOutline">#D8D8EE</color>
+    <color name="colorDivider">#E4E4F0</color>
+
+    <!-- === RECORDING STATE === -->
+    <color name="colorRecording">#EF4444</color>
+    <color name="colorRecordingGlow">#80EF4444</color>
+
+    <!-- === MISC (kept for compatibility) === -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="colorPrimaryDark">#5549D4</color>
+
+    <!-- === GRADIENT (Drawer header, background) === -->
+    <color name="colorGradientStart">#6C63FF</color>
+    <color name="colorGradientCenter">#8B7FFF</color>
+    <color name="colorGradientEnd">#00B89C</color>
+
+    <!-- === CARD OVERLAY === -->
+    <color name="colorCardOverlay">#CCFFFFFF</color>
+    <color name="colorRipple">#266C63FF</color>
 </resources>
+

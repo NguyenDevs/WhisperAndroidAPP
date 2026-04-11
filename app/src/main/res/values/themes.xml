@@ -1,9 +1,120 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.DOANDIDONG" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+
+    <!-- ===== BASE THEME (DayNight, Material3) ===== -->
+    <style name="Base.AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Color System -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorOnPrimary">@color/colorOnPrimary</item>
+        <item name="colorPrimaryContainer">@color/colorPrimaryVariant</item>
+        <item name="colorOnPrimaryContainer">@color/colorOnPrimary</item>
+
+        <item name="colorSecondary">@color/colorSecondary</item>
+        <item name="colorTertiary">@color/colorTertiary</item>
+
+        <item name="colorSurface">@color/colorSurface</item>
+        <item name="colorOnSurface">@color/colorOnSurface</item>
+        <item name="colorSurfaceVariant">@color/colorSurfaceVariant</item>
+        <item name="colorOnSurfaceVariant">@color/colorOnSurfaceVariant</item>
+
+        <item name="android:colorBackground">@color/colorBackground</item>
+        <item name="colorOnBackground">@color/colorOnBackground</item>
+
+        <item name="colorError">@color/colorError</item>
+        <item name="colorOnError">@color/colorOnError</item>
+
+        <item name="android:statusBarColor">@color/colorBackground</item>
+        <item name="android:navigationBarColor">@color/colorSurface</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
     </style>
 
-    <style name="Theme.DOANDIDONG" parent="Base.Theme.DOANDIDONG"/>
+    <!-- Main App Theme -->
+    <style name="AppTheme" parent="Base.AppTheme" />
+
+    <!-- ===== TOOLBAR ===== -->
+    <style name="Widget.App.Toolbar" parent="Widget.Material3.Toolbar">
+        <item name="android:background">@color/colorSurface</item>
+        <item name="titleTextColor">@color/colorOnSurface</item>
+    </style>
+
+    <!-- ===== MATERIAL CARD ===== -->
+    <style name="Widget.App.Card" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardBackgroundColor">@color/colorSurface</item>
+        <item name="cardElevation">4dp</item>
+        <item name="cardCornerRadius">16dp</item>
+        <item name="strokeColor">@color/colorOutline</item>
+        <item name="strokeWidth">1dp</item>
+    </style>
+
+    <!-- ===== FAB (Mic Button) ===== -->
+    <style name="Widget.App.FAB" parent="Widget.Material3.FloatingActionButton.Primary">
+        <item name="backgroundTint">@color/colorPrimary</item>
+        <item name="tint">@color/colorOnPrimary</item>
+        <item name="elevation">12dp</item>
+    </style>
+
+    <!-- ===== FAB Recording State ===== -->
+    <style name="Widget.App.FAB.Recording" parent="Widget.App.FAB">
+        <item name="backgroundTint">@color/colorRecording</item>
+    </style>
+
+    <!-- ===== TEXT INPUT ===== -->
+    <style name="Widget.App.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxStrokeColor">@color/colorOutline</item>
+        <item name="hintTextColor">@color/colorHint</item>
+        <item name="boxBackgroundColor">@color/colorSurfaceVariant</item>
+    </style>
+
+    <!-- ===== BOTTOM SHEET ===== -->
+    <style name="Widget.App.BottomSheet" parent="Widget.Design.BottomSheet.Modal">
+        <item name="backgroundTint">@color/colorSurface</item>
+    </style>
+
+    <!-- ===== NAVIGATION DRAWER ===== -->
+    <style name="Widget.App.NavigationDrawer" parent="Widget.Material3.NavigationView">
+        <item name="android:background">@color/colorSurface</item>
+        <item name="itemIconTint">@color/colorAccent</item>
+        <item name="itemTextColor">@color/colorOnSurface</item>
+    </style>
+
+    <!-- ===== DIALOG ===== -->
+    <style name="Widget.App.Dialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="colorSurface">@color/colorSurface</item>
+        <item name="colorOnSurface">@color/colorOnSurface</item>
+        <item name="colorPrimary">@color/colorPrimary</item>
+    </style>
+
+    <!-- ===== POPUP MENU ===== -->
+    <style name="Widget.App.PopupMenu" parent="Widget.Material3.PopupMenu">
+        <item name="android:popupBackground">@color/colorSurface</item>
+        <item name="android:textColor">@color/colorOnSurface</item>
+    </style>
+
+    <!-- ===== BUTTON ===== -->
+    <style name="Widget.App.Button" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/colorPrimary</item>
+        <item name="android:textColor">@color/colorOnPrimary</item>
+        <item name="cornerRadius">12dp</item>
+    </style>
+
+    <style name="Widget.App.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="strokeColor">@color/colorOutline</item>
+        <item name="android:textColor">@color/colorOnSurface</item>
+        <item name="cornerRadius">12dp</item>
+    </style>
+
+    <!-- ===== SLIDER ===== -->
+    <style name="Widget.App.Slider" parent="Widget.Material3.Slider">
+        <item name="trackColorActive">@color/colorPrimary</item>
+        <item name="trackColorInactive">@color/colorOutline</item>
+        <item name="thumbColor">@color/colorPrimary</item>
+    </style>
+
+    <!-- ===== CHIP ===== -->
+    <style name="Widget.App.Chip" parent="Widget.Material3.Chip.Assist">
+        <item name="android:textColor">@color/colorOnSurface</item>
+        <item name="chipBackgroundColor">@color/colorSurfaceVariant</item>
+        <item name="chipStrokeColor">@color/colorOutline</item>
+        <item name="chipStrokeWidth">1dp</item>
+    </style>
+
 </resources>

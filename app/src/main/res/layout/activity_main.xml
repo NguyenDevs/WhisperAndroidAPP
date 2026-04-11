@@ -1,0 +1,474 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    activity_main.xml - Main Screen Layout (Migration: speechlayout.xml → activity_main.xml)
+    Design: Material Design 3, Dark Mode, CoordinatorLayout
+-->
+<androidx.drawerlayout.widget.DrawerLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/drawer_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBackground">
+
+    <!-- ===================== MAIN CONTENT ===================== -->
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:id="@+id/root_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/colorBackground">
+
+        <!-- Top App Bar -->
+        <com.google.android.material.appbar.AppBarLayout
+            android:id="@+id/app_bar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/colorBackground"
+            android:fitsSystemWindows="true"
+            app:elevation="0dp">
+
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:background="@color/colorBackground"
+                app:contentInsetStart="0dp">
+
+                <!-- App icon + Title -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="NguyenDevs"
+                        android:textColor="@color/colorPrimary"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text=" STT"
+                        android:textColor="@color/colorAccent"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- Settings Button (right side) -->
+                <ImageButton
+                    android:id="@+id/btnSettings"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_gravity="end"
+                    android:layout_marginEnd="4dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Settings"
+                    android:padding="10dp"
+                    android:src="@drawable/settings"
+                    app:tint="@color/colorOnSurfaceVariant" />
+
+            </com.google.android.material.appbar.MaterialToolbar>
+        </com.google.android.material.appbar.AppBarLayout>
+
+        <!-- ===================== SCROLLABLE CONTENT ===================== -->
+        <androidx.core.widget.NestedScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:fillViewport="true"
+            android:paddingBottom="160dp"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingHorizontal="16dp"
+                android:paddingTop="16dp">
+
+                <!-- === RESULT CARD === -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardResult"
+                    style="@style/Widget.App.Card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <!-- Card Header Row: Status chip + Search button -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingBottom="12dp">
+
+                            <!-- Status chip (language detected) -->
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipLanguage"
+                                style="@style/Widget.App.Chip"
+                                android:layout_width="wrap_content"
+                                android:layout_height="32dp"
+                                android:text="Tự động"
+                                android:textSize="12sp"
+                                app:chipMinHeight="32dp" />
+
+                            <View
+                                android:layout_width="0dp"
+                                android:layout_height="1dp"
+                                android:layout_weight="1" />
+
+                            <!-- Search icon -->
+                            <ImageButton
+                                android:id="@+id/btnSearch"
+                                android:layout_width="36dp"
+                                android:layout_height="36dp"
+                                android:background="@drawable/ripple_circle"
+                                android:contentDescription="Search"
+                                android:padding="6dp"
+                                android:src="@drawable/search"
+                                app:tint="@color/colorOnSurfaceVariant" />
+                        </LinearLayout>
+
+                        <!-- Text Result Area -->
+                        <EditText
+                            android:id="@+id/txtResult"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_text_area"
+                            android:cursorVisible="false"
+                            android:enabled="false"
+                            android:ellipsize="none"
+                            android:focusable="false"
+                            android:hint="@string/ask_me_anything"
+                            android:inputType="textMultiLine"
+                            android:minHeight="140dp"
+                            android:padding="14dp"
+                            android:scrollbars="vertical"
+                            android:textColor="@color/colorOnBackground"
+                            android:textColorHint="@color/colorHint"
+                            android:textSize="16sp"
+                            android:gravity="top" />
+
+                        <!-- Action Buttons Row -->
+                        <LinearLayout
+                            android:id="@+id/layoutActions"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:orientation="horizontal"
+                            android:paddingTop="12dp">
+
+                            <!-- Copy -->
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:gravity="center"
+                                android:orientation="vertical">
+                                <ImageButton
+                                    android:id="@+id/btnCopy"
+                                    android:layout_width="40dp"
+                                    android:layout_height="40dp"
+                                    android:background="@drawable/ripple_circle"
+                                    android:contentDescription="Copy"
+                                    android:padding="8dp"
+                                    android:src="@drawable/copy"
+                                    app:tint="@color/colorSecondary" />
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:text="Copy"
+                                    android:textColor="@color/colorOnSurfaceVariant"
+                                    android:textSize="10sp" />
+                            </LinearLayout>
+
+                            <!-- Share -->
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:gravity="center"
+                                android:orientation="vertical">
+                                <ImageButton
+                                    android:id="@+id/btnShare"
+                                    android:layout_width="40dp"
+                                    android:layout_height="40dp"
+                                    android:background="@drawable/ripple_circle"
+                                    android:contentDescription="Share"
+                                    android:padding="8dp"
+                                    android:src="@drawable/share"
+                                    app:tint="@color/colorSecondary" />
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:text="Chia sẻ"
+                                    android:textColor="@color/colorOnSurfaceVariant"
+                                    android:textSize="10sp" />
+                            </LinearLayout>
+
+                            <!-- Translate -->
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:gravity="center"
+                                android:orientation="vertical">
+                                <ImageButton
+                                    android:id="@+id/btnTranslate"
+                                    android:layout_width="40dp"
+                                    android:layout_height="40dp"
+                                    android:background="@drawable/ripple_circle"
+                                    android:contentDescription="Translate"
+                                    android:padding="8dp"
+                                    android:src="@drawable/translate"
+                                    app:tint="@color/colorSecondary" />
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:text="Dịch"
+                                    android:textColor="@color/colorOnSurfaceVariant"
+                                    android:textSize="10sp" />
+                            </LinearLayout>
+
+                            <!-- Import audio -->
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:gravity="center"
+                                android:orientation="vertical">
+                                <ImageButton
+                                    android:id="@+id/btnImport"
+                                    android:layout_width="40dp"
+                                    android:layout_height="40dp"
+                                    android:background="@drawable/ripple_circle"
+                                    android:contentDescription="Import audio"
+                                    android:padding="8dp"
+                                    android:src="@drawable/imports"
+                                    app:tint="@color/colorSecondary" />
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:text="Import"
+                                    android:textColor="@color/colorOnSurfaceVariant"
+                                    android:textSize="10sp" />
+                            </LinearLayout>
+
+                            <!-- Save (visible only in edit mode) -->
+                            <LinearLayout
+                                android:id="@+id/layoutSave"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:gravity="center"
+                                android:orientation="vertical"
+                                android:visibility="gone">
+                                <ImageButton
+                                    android:id="@+id/btnSave"
+                                    android:layout_width="40dp"
+                                    android:layout_height="40dp"
+                                    android:background="@drawable/ripple_circle"
+                                    android:contentDescription="Save"
+                                    android:padding="8dp"
+                                    android:src="@drawable/ic_save"
+                                    app:tint="@color/colorAccent" />
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:text="Lưu"
+                                    android:textColor="@color/colorAccent"
+                                    android:textSize="10sp" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- === TTS CONTROLS CARD (visible after transcription) === -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardTtsControls"
+                    style="@style/Widget.App.Card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:orientation="horizontal"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Đọc văn bản"
+                            android:textColor="@color/colorOnSurfaceVariant"
+                            android:textSize="14sp" />
+
+                        <!-- Pause TTS -->
+                        <ImageButton
+                            android:id="@+id/btnPause"
+                            android:layout_width="44dp"
+                            android:layout_height="44dp"
+                            android:background="@drawable/ripple_circle"
+                            android:contentDescription="Pause"
+                            android:padding="8dp"
+                            android:src="@drawable/pause"
+                            app:tint="@color/colorOnSurface" />
+
+                        <!-- Play / Repeat TTS -->
+                        <ImageButton
+                            android:id="@+id/btnRepeat"
+                            android:layout_width="44dp"
+                            android:layout_height="44dp"
+                            android:layout_marginStart="8dp"
+                            android:background="@drawable/ripple_circle"
+                            android:contentDescription="Repeat"
+                            android:padding="8dp"
+                            android:src="@drawable/repeat"
+                            app:tint="@color/colorPrimary" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- === RECENT HISTORY BUTTON === -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRecent"
+                    style="@style/Widget.App.Button.Outlined"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:paddingHorizontal="20dp"
+                    android:text="@string/recent"
+                    android:textSize="13sp"
+                    app:icon="@drawable/ic_history"
+                    app:iconSize="18dp"
+                    app:iconTint="@color/colorOnSurfaceVariant" />
+
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+
+        <!-- ===================== BOTTOM FAB AREA ===================== -->
+        <!-- Processing ProgressBar (circular, above FAB) -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="152dp"
+            android:indeterminateTint="@color/colorAccent"
+            android:visibility="gone" />
+
+        <!-- Mic FAB -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnMic"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="32dp"
+            android:contentDescription="Record"
+            android:src="@drawable/micro"
+            app:backgroundTint="@color/colorPrimary"
+            app:fabCustomSize="72dp"
+            app:maxImageSize="36dp"
+            app:tint="@color/colorOnPrimary"
+            app:elevation="8dp" />
+
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+    <!-- ===================== NAVIGATION DRAWER ===================== -->
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="320dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:background="@color/colorSurface"
+        android:elevation="12dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Drawer Header -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="140dp"
+                android:background="@drawable/bg_drawer_header"
+                android:gravity="bottom"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="NguyenDevs"
+                    android:textColor="@color/colorAccent"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Nhận diện giọng nói AI"
+                    android:textColor="@color/colorOnSurfaceVariant"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <!-- History Section Header -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/colorSurface"
+                android:padding="16dp"
+                android:text="@string/history_title"
+                android:textColor="@color/colorOnSurface"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <!-- Divider -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/colorDivider" />
+
+            <!-- History RecyclerView -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/history_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                android:overScrollMode="never" />
+
+            <!-- Empty history hint -->
+            <TextView
+                android:id="@+id/tvHistoryEmpty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:padding="32dp"
+                android:text="@string/history_empty"
+                android:textColor="@color/colorHint"
+                android:textSize="14sp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.drawerlayout.widget.DrawerLayout>
