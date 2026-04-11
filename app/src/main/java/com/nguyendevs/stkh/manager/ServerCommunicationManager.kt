@@ -8,7 +8,6 @@ import android.util.Log
 import android.widget.EditText
 import android.widget.ProgressBar
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.nguyendevs.stkh.database.HistoryEntity
 import com.nguyendevs.stkh.repository.IHistoryRepository
 import com.nguyendevs.stkh.util.gone
 import com.nguyendevs.stkh.util.showToast
@@ -34,21 +33,12 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 
-/**
- * ServerCommunicationManager implements IServerClient.
- *
- * SOLID:
- * - SRP: Chỉ lo giao tiếp server (network, SSL) và lưu kết quả vào repository
- * - DIP: Phụ thuộc vào IHistoryRepository (abstraction), không phụ thuộc AppDatabase/Room trực tiếp
- *       Phụ thuộc vào ITextToSpeech thay vì TextToSpeechManager cụ thể
- * - OCP: Dễ swap sang RemoteHistoryRepository hoặc mock trong test
- */
 class ServerCommunicationManager(
     private val context: Context,
     private val txtResult: EditText,
     private val progressBar: ProgressBar,
-    private val historyRepository: IHistoryRepository,   // DIP: interface, không phải AppDatabase
-    private val ttsManager: ITextToSpeech,               // DIP: interface, không phải TextToSpeechManager
+    private val historyRepository: IHistoryRepository,
+    private val ttsManager: ITextToSpeech,
     private val lifecycleScope: CoroutineScope
 ) : IServerClient {
 
@@ -100,8 +90,7 @@ class ServerCommunicationManager(
 
                 val language = prefs.getString("selectedLanguage", "Vietnamese") ?: "Vietnamese"
                 val model = prefs.getString("selectedModel", "Medium") ?: "Medium"
-                val serverUrl = "https://$serverIP:8443/transcribe"
-                Log.d(TAG, "Sending to: $serverUrl")
+                val url = "https://$serverIP:8443/transcribe"
 
                 val requestBody = MultipartBody.Builder()
                     .setType(MultipartBody.FORM)
@@ -110,28 +99,23 @@ class ServerCommunicationManager(
                     .addFormDataPart("file", file.name, file.asRequestBody("audio/*".toMediaType()))
                     .build()
 
-                val request = Request.Builder().url(serverUrl).post(requestBody).build()
+                client.newCall(Request.Builder().url(url).post(requestBody).build())
+                    .execute().use { response ->
+                        if (!response.isSuccessful) throw IOException("Server error: ${response.code}")
+                        val json = JSONObject(response.body?.string() ?: throw IOException("Empty response"))
+                        val text = json.getString("text")
+                        val lang = json.getString("language")
 
-                client.newCall(request).execute().use { response ->
-                    if (!response.isSuccessful) throw IOException("Server error: ${response.code}")
-                    val body = response.body?.string() ?: throw IOException("Empty response")
-                    val json = JSONObject(body)
-                    val transcribedText = json.getString("text")
-                    val detectedLanguage = json.getString("language")
+                        historyRepository.insert(text, lang)
 
-                    // Dùng IHistoryRepository (DIP) - không phụ thuộc Room cụ thể
-                    historyRepository.insert(transcribedText, detectedLanguage)
-
-                    withContext(Dispatchers.Main) {
-                        ttsManager.setDetectedLanguage(detectedLanguage)
-                        progressBar.gone()
-                        txtResult.setText(transcribedText)
-                        onTranscriptionSuccess?.invoke(transcribedText, detectedLanguage)
-                        if (transcribedText.isNotEmpty()) {
-                            ttsManager.speakText(transcribedText)
+                        withContext(Dispatchers.Main) {
+                            ttsManager.setDetectedLanguage(lang)
+                            progressBar.gone()
+                            txtResult.setText(text)
+                            onTranscriptionSuccess?.invoke(text, lang)
+                            if (text.isNotEmpty()) ttsManager.speakText(text)
                         }
                     }
-                }
 
                 if (file.exists()) file.delete()
 
@@ -145,9 +129,7 @@ class ServerCommunicationManager(
         }
     }
 
-    override fun showAudioFilePicker() {
-        onShowFilePicker?.invoke()
-    }
+    override fun showAudioFilePicker() = onShowFilePicker?.invoke() ?: Unit
 
     override fun handlePickedAudio(uri: Uri) {
         lifecycleScope.launch(Dispatchers.IO) {
@@ -157,16 +139,16 @@ class ServerCommunicationManager(
     }
 
     private fun getFileNameFromUri(uri: Uri): String {
-        var fileName = "audio_${System.currentTimeMillis()}"
+        var name = "audio_${System.currentTimeMillis()}"
         runCatching {
             context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
                 if (cursor.moveToFirst()) {
                     val idx = cursor.getColumnIndex(android.provider.MediaStore.MediaColumns.DISPLAY_NAME)
-                    if (idx != -1) fileName = cursor.getString(idx)
+                    if (idx != -1) name = cursor.getString(idx)
                 }
             }
         }
-        return fileName
+        return name
     }
 
     private fun confirmAndSendAudio(uri: Uri, fileName: String) {
@@ -181,12 +163,13 @@ class ServerCommunicationManager(
                             if (tempFile.exists()) {
                                 progressBar.visible()
                                 txtResult.setText("")
-                                val hint = "Đang xử lý: $fileName"
-                                txtResult.hint = SpannableString(hint).apply {
-                                    setSpan(StyleSpan(android.graphics.Typeface.ITALIC), 0, hint.length, 0)
+                                txtResult.hint = SpannableString("Đang xử lý: $fileName").apply {
+                                    setSpan(StyleSpan(android.graphics.Typeface.ITALIC), 0, length, 0)
                                 }
                                 sendAudioToServer(tempFile)
-                            } else { context.showToast("File không tồn tại!") }
+                            } else {
+                                context.showToast("File không tồn tại!")
+                            }
                         }
                     } catch (e: IOException) {
                         withContext(Dispatchers.Main) { context.showToast("Lỗi xử lý file: ${e.message}") }
@@ -199,12 +182,10 @@ class ServerCommunicationManager(
 
     @Throws(IOException::class)
     private fun createTempFileFromUri(uri: Uri, fileName: String): File {
-        val tempFile = File(
-            context.getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC), fileName
-        )
+        val file = File(context.getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC), fileName)
         val input: InputStream = context.contentResolver.openInputStream(uri)
             ?: throw IOException("Cannot open URI")
-        input.use { i -> FileOutputStream(tempFile).use { o -> i.copyTo(o, 8192) } }
-        return tempFile
+        input.use { i -> FileOutputStream(file).use { o -> i.copyTo(o, 8192) } }
+        return file
     }
 }

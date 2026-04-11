@@ -13,13 +13,6 @@ import com.google.mlkit.nl.translate.TranslatorOptions
 import com.google.mlkit.nl.translate.TranslateLanguage
 import com.nguyendevs.stkh.util.showToast
 
-/**
- * TranslateManager implements ITranslator.
- *
- * SOLID:
- * - SRP: Chỉ lo detect ngôn ngữ và dịch văn bản
- * - DIP: Caller chỉ cần biết ITranslator, không phụ thuộc ML Kit
- */
 class TranslateManager(
     private val context: Context,
     private val txtResult: EditText
@@ -28,7 +21,6 @@ class TranslateManager(
     private var translator: Translator? = null
     private var originalTextSnapshot: String? = null
 
-    // Callback để notify TTS sau khi dịch xong
     var onTranslated: ((text: String, targetLang: String) -> Unit)? = null
 
     companion object {

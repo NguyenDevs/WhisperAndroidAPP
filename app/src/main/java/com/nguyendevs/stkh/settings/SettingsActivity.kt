@@ -18,15 +18,11 @@ import com.nguyendevs.stkh.util.showToast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-/**
- * SettingsActivity - Màn hình cài đặt.
- * Cải tiến: ViewBinding, Room, Material Slider, OnBackPressedCallback (non-deprecated).
- */
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySettingsBinding
     private lateinit var prefs: SharedPreferences
-    private lateinit var historyRepository: IHistoryRepository   // DIP
+    private lateinit var historyRepository: IHistoryRepository
 
     private var selectedLanguage = "Vietnamese"
     private var selectedModel = "Medium"
@@ -98,7 +94,6 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun setupSliders() {
-        // Speed Slider
         binding.sliderSpeechSpeed.value = speechSpeed.toFloat()
         binding.tvSpeedValue.text = speechSpeed.toString()
         binding.sliderSpeechSpeed.addOnChangeListener { _, value, fromUser ->
@@ -109,7 +104,6 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
 
-        // Pitch Slider
         binding.sliderSpeechPitch.value = speechPitch.toFloat()
         binding.tvPitchValue.text = speechPitch.toString()
         binding.sliderSpeechPitch.addOnChangeListener { _, value, fromUser ->
@@ -138,7 +132,6 @@ class SettingsActivity : AppCompatActivity() {
         binding.btnReset.setOnClickListener { showResetDialog() }
     }
 
-    /** Dùng OnBackPressedCallback thay deprecated onBackPressed() */
     private fun setupBackPressedCallback() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -192,7 +185,6 @@ class SettingsActivity : AppCompatActivity() {
                     .putString("serverIP", defaultIp)
                     .apply()
 
-                // Refresh UI
                 setupLanguageSpinner()
                 setupModelSpinner()
                 binding.sliderSpeechSpeed.value = speechSpeed.toFloat()
@@ -221,8 +213,6 @@ class SettingsActivity : AppCompatActivity() {
         startActivity(intent)
         finish()
     }
-
-    /** Kotlin helper để tạo OnItemSelectedListener gọn */
     private fun simpleItemSelectedListener(
         onSelected: (position: Int) -> Unit
     ): android.widget.AdapterView.OnItemSelectedListener {

@@ -15,14 +15,6 @@ import com.nguyendevs.stkh.util.visible
 import java.io.File
 import java.io.IOException
 
-/**
- * AudioRecorderManager implements IAudioRecorder.
- *
- * SOLID:
- * - SRP: Chỉ lo ghi âm và phát âm thanh, không biết gì về server/UI
- * - LSP: Có thể thay thế bằng MockAudioRecorder trong test mà không ảnh hưởng MainActivity
- * - DIP: MainActivity phụ thuộc vào IAudioRecorder, không phụ thuộc class cụ thể
- */
 class AudioRecorderManager(
     private val context: Context,
     private val txtResult: EditText,
@@ -56,20 +48,15 @@ class AudioRecorderManager(
             isRecording = true
             playSound(R.raw.on)
             progressBar.visible()
-
-            val hint = "Đang ghi âm…"
-            txtResult.hint = SpannableString(hint).apply {
-                setSpan(StyleSpan(android.graphics.Typeface.ITALIC), 0, hint.length, 0)
+            txtResult.hint = SpannableString("Đang ghi âm…").apply {
+                setSpan(StyleSpan(android.graphics.Typeface.ITALIC), 0, length, 0)
             }
         } catch (e: IOException) {
             context.showToast("Lỗi khi ghi âm: ${e.message}")
         }
     }
 
-    override fun stopRecordingAndSendToServer(
-        serverManager: IServerClient,
-        onError: () -> Unit
-    ) {
+    override fun stopRecordingAndSendToServer(serverManager: IServerClient, onError: () -> Unit) {
         if (mediaRecorder != null && isRecording) {
             try {
                 mediaRecorder?.apply { stop(); release() }
@@ -77,10 +64,8 @@ class AudioRecorderManager(
                 isRecording = false
                 playSound(R.raw.off)
                 progressBar.gone()
-
-                val hint = "Đang xử lý…"
-                txtResult.hint = SpannableString(hint).apply {
-                    setSpan(StyleSpan(android.graphics.Typeface.ITALIC), 0, hint.length, 0)
+                txtResult.hint = SpannableString("Đang xử lý…").apply {
+                    setSpan(StyleSpan(android.graphics.Typeface.ITALIC), 0, length, 0)
                 }
                 _audioFile?.let { serverManager.sendAudioToServer(it) }
             } catch (e: Exception) {

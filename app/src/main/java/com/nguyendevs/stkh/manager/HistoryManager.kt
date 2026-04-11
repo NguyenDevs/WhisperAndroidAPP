@@ -3,13 +3,12 @@ package com.nguyendevs.stkh.manager
 import android.content.Context
 import android.os.Environment
 import android.widget.EditText
-import androidx.drawerlayout.widget.DrawerLayout
 import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.nguyendevs.stkh.adapter.HistoryAdapter
 import com.nguyendevs.stkh.model.HistoryItem
 import com.nguyendevs.stkh.repository.IHistoryRepository
-import com.nguyendevs.stkh.util.showToastLong
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -22,36 +21,26 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/**
- * HistoryManager - Nghiệp vụ quản lý lịch sử và điều phối UI.
- *
- * SOLID:
- * - SRP: Chỉ lo orchestrate history-related UI actions
- * - DIP: Phụ thuộc vào IHistoryRepository, ITextToSpeech, ITranslator (interfaces), không phụ thuộc Room/TTS cụ thể
- * - ISP: Nhận đúng interface mà nó cần, không nhận toàn bộ AppDatabase
- */
 class HistoryManager(
     private val context: Context,
-    private val repository: IHistoryRepository,        // DIP
+    private val repository: IHistoryRepository,
     private val txtResult: EditText,
     private val drawerLayout: DrawerLayout,
     val historyAdapter: HistoryAdapter,
-    private val ttsManager: ITextToSpeech,             // DIP
-    private val translator: ITranslator,               // DIP
+    private val ttsManager: ITextToSpeech,
+    private val translator: ITranslator,
     private val permissionManager: PermissionManager,
     private val lifecycleScope: CoroutineScope
 ) {
-
     private var editingLang = "unknown"
 
-    // Callbacks để update UI từ MainActivity → HistoryManager không import MainActivity
-    var onHistoryCountChanged: ((count: Int) -> Unit)? = null
-    var onSaveButtonShow: ((visible: Boolean) -> Unit)? = null
-    var onTtsControlsShow: ((visible: Boolean) -> Unit)? = null
-    var onCopyRequest: ((text: String) -> Unit)? = null
-    var onShowSnackbar: ((message: String) -> Unit)? = null
+    var onHistoryCountChanged: ((Int) -> Unit)? = null
+    var onSaveButtonShow: ((Boolean) -> Unit)? = null
+    var onTtsControlsShow: ((Boolean) -> Unit)? = null
+    var onCopyRequest: ((String) -> Unit)? = null
+    var onShowSnackbar: ((String) -> Unit)? = null
 
-    /** Đăng ký collect Room Flow → tự động update adapter */
+    /** Bắt đầu collect Room Flow để tự động cập nhật adapter. */
     fun observeHistory() {
         lifecycleScope.launch {
             repository.observeAll().collect { items ->
@@ -79,9 +68,7 @@ class HistoryManager(
         onSaveButtonShow?.invoke(false)
     }
 
-    // ============ Adapter callbacks ============
-
-    fun onItemClick(item: HistoryItem) = showHistoryDetail(item)
+    fun onItemClick(item: HistoryItem) = showDetail(item)
 
     fun onMenuCopy(item: HistoryItem) {
         onCopyRequest?.invoke(item.content)
@@ -115,9 +102,8 @@ class HistoryManager(
         }
     }
 
-    fun onMenuExport(item: HistoryItem) {
-        permissionManager.checkWriteStoragePermission { showExportFormatDialog(item) }
-    }
+    fun onMenuExport(item: HistoryItem) =
+        permissionManager.checkWriteStoragePermission { showExportDialog(item) }
 
     fun clearAllHistory() {
         lifecycleScope.launch(Dispatchers.IO) {
@@ -126,17 +112,12 @@ class HistoryManager(
         }
     }
 
-    // ============ Private helpers ============
-
-    private fun showHistoryDetail(item: HistoryItem) {
+    private fun showDetail(item: HistoryItem) {
         val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
-        val formattedDate = sdf.format(Date(item.date))
-        val langDisplay = LANG_DISPLAY_MAP[item.lang] ?: item.lang
-        val message = "${item.content}\n\n🌐 Ngôn ngữ: $langDisplay\n🕐 Lưu lúc: $formattedDate"
-
+        val lang = LANG_MAP[item.lang] ?: item.lang
         MaterialAlertDialogBuilder(context)
             .setTitle("Chi tiết bản ghi")
-            .setMessage(message)
+            .setMessage("${item.content}\n\n🌐 Ngôn ngữ: $lang\n🕐 Lưu lúc: ${sdf.format(Date(item.date))}")
             .setPositiveButton("Đóng") { d, _ -> d.dismiss() }
             .setNeutralButton("Đọc lại") { _, _ ->
                 editingLang = item.lang
@@ -146,35 +127,32 @@ class HistoryManager(
             .show()
     }
 
-    private fun showExportFormatDialog(item: HistoryItem) {
-        val formats = arrayOf("📄 Text (.txt)", "📝 Word (.docx)")
+    private fun showExportDialog(item: HistoryItem) {
         MaterialAlertDialogBuilder(context)
             .setTitle("Xuất file lịch sử")
-            .setItems(formats) { _, which ->
-                val fileName = "History_${item.date}${if (which == 0) ".txt" else ".docx"}"
+            .setItems(arrayOf("📄 Text (.txt)", "📝 Word (.docx)")) { _, which ->
                 val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
                 dir.mkdirs()
-                val file = File(dir, fileName)
-                if (which == 0) exportAsTxt(file, item.content)
-                else exportAsDocx(file, item.content)
+                val file = File(dir, "History_${item.date}${if (which == 0) ".txt" else ".docx"}")
+                if (which == 0) exportTxt(file, item.content) else exportDocx(file, item.content)
             }
             .setNegativeButton("Hủy", null)
             .show()
     }
 
-    private fun exportAsTxt(file: File, content: String) =
+    private fun exportTxt(file: File, content: String) =
         runCatching { file.writeText(content, Charsets.UTF_8); onShowSnackbar?.invoke("Đã xuất: ${file.name}") }
-            .onFailure { onShowSnackbar?.invoke("Lỗi xuất file: ${it.message}") }
+            .onFailure { onShowSnackbar?.invoke("Lỗi: ${it.message}") }
 
-    private fun exportAsDocx(file: File, content: String) {
-        val document = XWPFDocument()
+    private fun exportDocx(file: File, content: String) {
+        val doc = XWPFDocument()
         try {
-            document.createParagraph().createRun().setText(content)
-            FileOutputStream(file).use { document.write(it) }
+            doc.createParagraph().createRun().setText(content)
+            FileOutputStream(file).use { doc.write(it) }
             onShowSnackbar?.invoke("Đã xuất: ${file.name}")
         } catch (e: IOException) {
-            onShowSnackbar?.invoke("Lỗi xuất file: ${e.message}")
-        } finally { runCatching { document.close() } }
+            onShowSnackbar?.invoke("Lỗi: ${e.message}")
+        } finally { runCatching { doc.close() } }
     }
 
     private fun setReadOnly() {
@@ -194,7 +172,7 @@ class HistoryManager(
     }
 
     companion object {
-        private val LANG_DISPLAY_MAP = mapOf(
+        private val LANG_MAP = mapOf(
             "Vietnamese" to "Tiếng Việt", "English" to "Tiếng Anh",
             "Japanese" to "Tiếng Nhật", "Russian" to "Tiếng Nga",
             "French" to "Tiếng Pháp", "Spanish" to "Tiếng Tây Ban Nha",

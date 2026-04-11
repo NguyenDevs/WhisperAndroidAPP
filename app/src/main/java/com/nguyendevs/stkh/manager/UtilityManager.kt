@@ -8,9 +8,6 @@ import android.net.Uri
 import android.widget.EditText
 import com.nguyendevs.stkh.util.showToast
 
-/**
- * UtilityManager - Tiện ích: Copy, Share, Google Search.
- */
 class UtilityManager(
     private val context: Context,
     private val txtResult: EditText

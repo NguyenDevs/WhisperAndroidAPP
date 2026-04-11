@@ -9,10 +9,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.nguyendevs.stkh.util.showToast
 
-/**
- * PermissionManager - Quản lý xin quyền runtime.
- * Migration: Java PermissionManager → Kotlin.
- */
 class PermissionManager(private val context: Context) {
 
     private val activity: Activity get() = context as Activity
@@ -51,7 +47,6 @@ class PermissionManager(private val context: Context) {
     fun checkWriteStoragePermission(onPermissionGranted: () -> Unit) {
         this.onWritePermissionGranted = onPermissionGranted
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            // Android 10+: không cần quyền WRITE_EXTERNAL_STORAGE
             onPermissionGranted()
             return
         }

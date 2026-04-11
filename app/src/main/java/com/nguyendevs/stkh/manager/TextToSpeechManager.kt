@@ -6,8 +6,6 @@ import android.content.SharedPreferences
 import android.graphics.Color
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
-import android.speech.tts.Voice
-import android.text.Editable
 import android.text.Spannable
 import android.text.SpannableString
 import android.text.style.ForegroundColorSpan
@@ -17,14 +15,6 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.nguyendevs.stkh.util.showToast
 import java.util.Locale
 
-/**
- * TextToSpeechManager implements ITextToSpeech.
- *
- * SOLID:
- * - SRP: Chỉ lo TTS và word-highlighting, không biết gì về history/server
- * - LSP: Thay thế bằng MockTtsManager trong test mà không ảnh hưởng consumers
- * - DIP: Consumers (HistoryManager, ServerCommunicationManager) dùng interface ITextToSpeech
- */
 class TextToSpeechManager(
     private val context: Context,
     private val txtResult: EditText
@@ -38,16 +28,14 @@ class TextToSpeechManager(
     private var isSpeaking = false
     private var isPaused = false
     private var isLanguageManuallySet = false
-
     private var speechSpeed: Int
     private var speechPitch: Int
 
-    // Callbacks to notify MainActivity UI
     var onSpeakStart: (() -> Unit)? = null
     var onSpeakDone: (() -> Unit)? = null
 
     companion object {
-        private val languageToLocaleMap: Map<String, Locale> = mapOf(
+        private val LOCALE_MAP: Map<String, Locale> = mapOf(
             "Vietnamese" to Locale("vi", "VN"),
             "English" to Locale.US,
             "Japanese" to Locale.JAPAN,
@@ -58,19 +46,6 @@ class TextToSpeechManager(
             "Chinese" to Locale.SIMPLIFIED_CHINESE,
             "Korean" to Locale("ko", "KR"),
             "Italian" to Locale.ITALY
-        )
-
-        private val languageToCodeMap: Map<String, String> = mapOf(
-            "Vietnamese" to "vi-VN",
-            "English" to "en-US",
-            "Japanese" to "ja-JP",
-            "Russian" to "ru-RU",
-            "French" to "fr-FR",
-            "Spanish" to "es-ES",
-            "German" to "de-DE",
-            "Chinese" to "zh-CN",
-            "Korean" to "ko-KR",
-            "Italian" to "it-IT"
         )
     }
 
@@ -83,63 +58,31 @@ class TextToSpeechManager(
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
-            setTextToSpeechLanguage()
+            setTtsLanguage()
             textToSpeech?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                override fun onStart(utteranceId: String) {
-                    (context as? android.app.Activity)?.runOnUiThread {
-                        onSpeakStart?.invoke()
-                    }
-                }
+                override fun onStart(utteranceId: String) =
+                    runOnUi { onSpeakStart?.invoke() }
 
-                override fun onDone(utteranceId: String) {
-                    (context as? android.app.Activity)?.runOnUiThread {
-                        txtResult.setText(currentText)
-                        makeReadOnly()
-                        isSpeaking = false
-                        isPaused = false
-                        lastSpokenIndex = 0
-                        resumeIndex = 0
-                        onSpeakDone?.invoke()
-                    }
+                override fun onDone(utteranceId: String) = runOnUi {
+                    txtResult.setText(currentText)
+                    makeReadOnly()
+                    isSpeaking = false; isPaused = false
+                    lastSpokenIndex = 0; resumeIndex = 0
+                    onSpeakDone?.invoke()
                 }
 
                 @Deprecated("Deprecated in API 21")
-                override fun onError(utteranceId: String) {
-                    (context as? android.app.Activity)?.runOnUiThread {
-                        context.showToast("Lỗi khi đọc văn bản!")
-                    }
-                }
+                override fun onError(utteranceId: String) =
+                    runOnUi { context.showToast("Lỗi khi đọc văn bản!") }
 
                 override fun onRangeStart(utteranceId: String, start: Int, end: Int, frame: Int) {
                     val text = txtResult.text.toString()
-                    if (text != currentText) {
-                        lastSpokenIndex = 0
-                        resumeIndex = 0
-                        currentText = text
-                    }
-                    val adjustedStart = resumeIndex + start
-                    val adjustedEnd = resumeIndex + end
-                    if (adjustedStart >= 0 && adjustedEnd <= text.length) {
-                        lastSpokenIndex = adjustedStart
-                        (context as? android.app.Activity)?.runOnUiThread {
-                            val editable: Editable = txtResult.text
-                            val spannable = SpannableString(editable)
-                            // Xóa spans cũ
-                            spannable.getSpans(0, spannable.length, ForegroundColorSpan::class.java)
-                                .forEach { spannable.removeSpan(it) }
-                            // Tô toàn bộ màu on-surface
-                            spannable.setSpan(
-                                ForegroundColorSpan(Color.parseColor("#C8C8E8")),
-                                0, spannable.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                            )
-                            // Tô từ đang đọc màu accent (#00D4AA)
-                            spannable.setSpan(
-                                ForegroundColorSpan(Color.parseColor("#00D4AA")),
-                                adjustedStart, adjustedEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                            )
-                            txtResult.setText(spannable, TextView.BufferType.SPANNABLE)
-                            txtResult.setSelection(adjustedEnd)
-                        }
+                    if (text != currentText) { lastSpokenIndex = 0; resumeIndex = 0; currentText = text }
+                    val aStart = resumeIndex + start
+                    val aEnd = resumeIndex + end
+                    if (aStart >= 0 && aEnd <= text.length) {
+                        lastSpokenIndex = aStart
+                        runOnUi { highlightWord(aStart, aEnd) }
                     }
                 }
             })
@@ -148,19 +91,29 @@ class TextToSpeechManager(
         }
     }
 
+    /** Highlight từ đang đọc trong EditText. */
+    private fun highlightWord(start: Int, end: Int) {
+        val spannable = SpannableString(txtResult.text)
+        spannable.getSpans(0, spannable.length, ForegroundColorSpan::class.java)
+            .forEach { spannable.removeSpan(it) }
+        spannable.setSpan(ForegroundColorSpan(Color.parseColor("#C8C8E8")),
+            0, spannable.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        spannable.setSpan(ForegroundColorSpan(Color.parseColor("#00D4AA")),
+            start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        txtResult.setText(spannable, TextView.BufferType.SPANNABLE)
+        txtResult.setSelection(end)
+    }
+
     override fun setLanguage(langCode: String) {
         isLanguageManuallySet = true
-        val locale = languageToLocaleMap[langCode] ?: run {
-            context.showToast("Ngôn ngữ không hỗ trợ: $langCode")
-            return
-        }
+        val locale = LOCALE_MAP[langCode] ?: run { context.showToast("Ngôn ngữ không hỗ trợ: $langCode"); return }
         applyLocale(locale)
     }
 
-    fun setTextToSpeechLanguage(): Boolean {
+    fun setTtsLanguage(): Boolean {
         if (detectedLanguage == "Auto") return true
-        val locale = languageToLocaleMap[detectedLanguage] ?: run {
-            showLanguageNotSupportedDialog("Ngôn ngữ '$detectedLanguage' không được hỗ trợ.")
+        val locale = LOCALE_MAP[detectedLanguage] ?: run {
+            showLangNotSupportedDialog("Ngôn ngữ '$detectedLanguage' không được hỗ trợ.")
             return false
         }
         return applyLocale(locale)
@@ -169,29 +122,23 @@ class TextToSpeechManager(
     private fun applyLocale(locale: Locale): Boolean {
         val result = textToSpeech?.setLanguage(locale) ?: return false
         return if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-            showLanguageNotSupportedDialog("Ngôn ngữ '${locale.displayLanguage}' thiếu dữ liệu giọng nói.")
+            showLangNotSupportedDialog("Ngôn ngữ '${locale.displayLanguage}' thiếu dữ liệu giọng nói.")
             false
         } else {
-            val speed = speechSpeed / 50f
-            val pitch = speechPitch / 50f
-            textToSpeech?.setSpeechRate(speed)
-            textToSpeech?.setPitch(pitch)
+            textToSpeech?.setSpeechRate(speechSpeed / 50f)
+            textToSpeech?.setPitch(speechPitch / 50f)
             true
         }
     }
 
-    private fun showLanguageNotSupportedDialog(message: String) {
-        (context as? android.app.Activity)?.runOnUiThread {
+    private fun showLangNotSupportedDialog(message: String) {
+        runOnUi {
             MaterialAlertDialogBuilder(context)
                 .setTitle("Ngôn ngữ không khả dụng")
                 .setMessage("$message\nBạn có muốn tải dữ liệu giọng nói hoặc chuyển về tiếng Việt?")
-                .setPositiveButton("Tải dữ liệu") { dialog, _ ->
-                    try {
-                        val intent = Intent("com.android.settings.TTS_SETTINGS")
-                        context.startActivity(intent)
-                    } catch (e: Exception) {
-                        context.showToast("Không thể mở cài đặt TTS.")
-                    }
+                .setPositiveButton("Tải dữ liệu") { _, _ ->
+                    try { context.startActivity(Intent("com.android.settings.TTS_SETTINGS")) }
+                    catch (e: Exception) { context.showToast("Không thể mở cài đặt TTS.") }
                     textToSpeech?.setLanguage(Locale("vi", "VN"))
                     detectedLanguage = "Vietnamese"
                     context.showToast("Đã chuyển tạm về tiếng Việt.")
@@ -214,48 +161,29 @@ class TextToSpeechManager(
         makeReadOnly()
         currentText = text
         txtResult.setText(text)
-
         val textToSpeak: String
         if (isPaused && lastSpokenIndex > 0 && lastSpokenIndex < text.length) {
             textToSpeak = text.substring(lastSpokenIndex)
             resumeIndex = lastSpokenIndex
         } else {
             textToSpeak = text
-            lastSpokenIndex = 0
-            resumeIndex = 0
+            lastSpokenIndex = 0; resumeIndex = 0
         }
-
-        if (!isLanguageManuallySet) {
-            if (!setTextToSpeechLanguage()) return
-        }
-
-        val utteranceId = System.currentTimeMillis().toString()
-        textToSpeech?.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
-        isSpeaking = true
-        isPaused = false
+        if (!isLanguageManuallySet && !setTtsLanguage()) return
+        textToSpeech?.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null, System.currentTimeMillis().toString())
+        isSpeaking = true; isPaused = false
     }
 
     override fun pauseText() {
         if (textToSpeech != null && isSpeaking && !isPaused) {
             textToSpeech?.stop()
-            isPaused = true
-            isSpeaking = false
-            (context as? android.app.Activity)?.runOnUiThread {
+            isPaused = true; isSpeaking = false
+            runOnUi {
                 val text = txtResult.text.toString()
                 if (lastSpokenIndex < text.length) {
                     var wordEnd = lastSpokenIndex
                     while (wordEnd < text.length && !text[wordEnd].isWhitespace()) wordEnd++
-                    val spannable = SpannableString(text).apply {
-                        setSpan(
-                            ForegroundColorSpan(Color.parseColor("#C8C8E8")),
-                            0, length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                        )
-                        setSpan(
-                            ForegroundColorSpan(Color.parseColor("#00D4AA")),
-                            lastSpokenIndex, wordEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                        )
-                    }
-                    txtResult.setText(spannable)
+                    highlightWord(lastSpokenIndex, wordEnd)
                 }
             }
         }
@@ -263,29 +191,23 @@ class TextToSpeechManager(
 
     override fun setDetectedLanguage(language: String) {
         detectedLanguage = language
-        setTextToSpeechLanguage()
+        setTtsLanguage()
     }
 
     override fun updateTtsSettings(speed: Int, pitch: Int) {
-        speechSpeed = speed
-        speechPitch = pitch
-        setTextToSpeechLanguage()
-    }
-
-    private fun makeReadOnly() {
-        txtResult.apply {
-            isFocusable = false
-            isCursorVisible = false
-            isLongClickable = false
-            keyListener = null
-        }
+        speechSpeed = speed; speechPitch = pitch
+        setTtsLanguage()
     }
 
     override fun destroy() {
-        textToSpeech?.apply {
-            stop()
-            shutdown()
-        }
+        textToSpeech?.apply { stop(); shutdown() }
         textToSpeech = null
     }
+
+    private fun makeReadOnly() {
+        txtResult.apply { isFocusable = false; isCursorVisible = false; isLongClickable = false; keyListener = null }
+    }
+
+    private fun runOnUi(block: () -> Unit) =
+        (context as? android.app.Activity)?.runOnUiThread(block) ?: Unit
 }

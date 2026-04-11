@@ -27,23 +27,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefs: SharedPreferences
 
-    // ===== INTERFACES (DIP) =====
     private lateinit var ttsManager: ITextToSpeech
     private lateinit var translator: ITranslator
     private lateinit var audioRecorder: IAudioRecorder
     private lateinit var serverClient: IServerClient
-
-    // Concrete types cần cho wiring
     private lateinit var historyManager: HistoryManager
     private lateinit var permissionManager: PermissionManager
     private lateinit var utilityManager: UtilityManager
 
-    // Activity Result API (modern replacement for startActivityForResult)
     private val audioPickerLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
-    ) { uri ->
-        uri?.let { serverClient.handlePickedAudio(it) }
-    }
+    ) { uri -> uri?.let { serverClient.handlePickedAudio(it) } }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,36 +45,27 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-
-        // === Composition Root: khởi tạo và inject dependencies ===
         wireUpDependencies()
-
         setupRecyclerView()
         setupUiInitialState()
         setupListeners()
         setupBackPressedCallback()
-
-        // Bắt đầu observe Room Flow
         historyManager.observeHistory()
-
         permissionManager.checkAudioPermission()
         permissionManager.checkStoragePermission()
     }
 
+    /** Khởi tạo và inject toàn bộ dependencies (Composition Root). */
     private fun wireUpDependencies() {
         val db = AppDatabase.getInstance(this)
+        val historyRepository = RoomHistoryRepository(db)
 
-        // === Data Layer ===
-        val historyRepository = RoomHistoryRepository(db)  
-
-        // === Manager Layer (phụ thuộc interface) ===
         ttsManager = TextToSpeechManager(this, binding.txtResult).also {
-            it.onSpeakStart = { /* UI hook nếu cần */ }
-            it.onSpeakDone = { /* UI hook nếu cần */ }
+            it.onSpeakStart = {}
+            it.onSpeakDone = {}
         }
 
         translator = TranslateManager(this, binding.txtResult).also { mgr ->
-            // Khi dịch xong → cập nhật TTS & đọc lại
             (mgr as TranslateManager).onTranslated = { text, lang ->
                 ttsManager.setDetectedLanguage(lang)
                 ttsManager.speakText(text)
@@ -88,30 +73,26 @@ class MainActivity : AppCompatActivity() {
         }
 
         audioRecorder = AudioRecorderManager(this, binding.txtResult, binding.progressBar)
-
         permissionManager = PermissionManager(this)
 
         serverClient = ServerCommunicationManager(
             context = this,
             txtResult = binding.txtResult,
             progressBar = binding.progressBar,
-            historyRepository = historyRepository,   // inject IHistoryRepository
-            ttsManager = ttsManager,                 // inject ITextToSpeech
+            historyRepository = historyRepository,
+            ttsManager = ttsManager,
             lifecycleScope = lifecycleScope
         ).also { mgr ->
             mgr as ServerCommunicationManager
             mgr.onTranscriptionSuccess = { _, _ ->
                 binding.cardTtsControls.visible()
-                binding.cardTtsControls.startAnimation(
-                    AnimationUtils.loadAnimation(this, R.anim.fade_in)
-                )
+                binding.cardTtsControls.startAnimation(AnimationUtils.loadAnimation(this, R.anim.fade_in))
                 binding.btnMic.isEnabled = true
             }
             mgr.onTranscriptionError = {
                 binding.btnMic.isEnabled = true
-                setResultAreaHint(getString(R.string.ask_me_anything))
+                setResultHint(getString(R.string.ask_me_anything))
             }
-            // File picker: MainActivity owns launcher, delegate via callback
             mgr.onShowFilePicker = { audioPickerLauncher.launch("audio/*") }
         }
 
@@ -126,26 +107,22 @@ class MainActivity : AppCompatActivity() {
 
         historyManager = HistoryManager(
             context = this,
-            repository = historyRepository,          // inject IHistoryRepository (DIP)
+            repository = historyRepository,
             txtResult = binding.txtResult,
             drawerLayout = binding.drawerLayout,
             historyAdapter = historyAdapter,
-            ttsManager = ttsManager,                 // inject ITextToSpeech (DIP)
-            translator = translator,                 // inject ITranslator (DIP)
+            ttsManager = ttsManager,
+            translator = translator,
             permissionManager = permissionManager,
             lifecycleScope = lifecycleScope
         ).also { mgr ->
             mgr.onHistoryCountChanged = { count ->
                 if (count == 0) binding.tvHistoryEmpty.visible() else binding.tvHistoryEmpty.gone()
             }
-            mgr.onSaveButtonShow = { visible ->
-                if (visible) binding.layoutSave.visible() else binding.layoutSave.gone()
-            }
-            mgr.onTtsControlsShow = { visible ->
-                if (visible) binding.cardTtsControls.visible() else binding.cardTtsControls.gone()
-            }
+            mgr.onSaveButtonShow = { v -> if (v) binding.layoutSave.visible() else binding.layoutSave.gone() }
+            mgr.onTtsControlsShow = { v -> if (v) binding.cardTtsControls.visible() else binding.cardTtsControls.gone() }
             mgr.onCopyRequest = { text -> utilityManager.copyToClipboard(text) }
-            mgr.onShowSnackbar = { message -> showSnackbar(message) }
+            mgr.onShowSnackbar = { msg -> showSnackbar(msg) }
         }
 
         utilityManager = UtilityManager(this, binding.txtResult)
@@ -161,18 +138,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupUiInitialState() {
         binding.txtResult.apply {
-            isFocusable = false; isCursorVisible = false
-            isLongClickable = false; keyListener = null
+            isFocusable = false; isCursorVisible = false; isLongClickable = false; keyListener = null
         }
-        setResultAreaHint(getString(R.string.ask_me_anything))
+        setResultHint(getString(R.string.ask_me_anything))
         binding.cardTtsControls.gone()
         binding.layoutSave.gone()
         binding.progressBar.gone()
     }
-
-    // ======================================================
-    // EVENT LISTENERS
-    // ======================================================
 
     private fun setupListeners() {
         binding.btnMic.setOnClickListener {
@@ -181,14 +153,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.btnRepeat.setOnClickListener {
-            val text = binding.txtResult.text.toString()
-            if (text.isNotEmpty()) ttsManager.speakText(text)
+            binding.txtResult.text.toString().takeIf { it.isNotEmpty() }?.let { ttsManager.speakText(it) }
         }
         binding.btnPause.setOnClickListener {
-            val text = binding.txtResult.text.toString()
-            if (text.isNotEmpty()) ttsManager.pauseText()
+            binding.txtResult.text.toString().takeIf { it.isNotEmpty() }?.let { ttsManager.pauseText() }
         }
-
         binding.btnCopy.setOnClickListener {
             val text = binding.txtResult.text.toString()
             if (text.isNotEmpty()) { utilityManager.copyToClipboard(text); showSnackbar("Đã sao chép!") }
@@ -202,15 +171,12 @@ class MainActivity : AppCompatActivity() {
             serverClient.showAudioFilePicker()
         }
         binding.btnSave.setOnClickListener { historyManager.saveEditedContent() }
-
         binding.btnSettings.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             })
         }
-        binding.btnRecent.setOnClickListener {
-            binding.drawerLayout.openDrawer(GravityCompat.START)
-        }
+        binding.btnRecent.setOnClickListener { binding.drawerLayout.openDrawer(GravityCompat.START) }
     }
 
     private fun setupBackPressedCallback() {
@@ -227,14 +193,9 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    // ======================================================
-    // RECORDING STATE
-    // ======================================================
-
     private fun startRecording() {
         binding.txtResult.apply {
-            isFocusable = false; isCursorVisible = false
-            isLongClickable = false; keyListener = null
+            isFocusable = false; isCursorVisible = false; isLongClickable = false; keyListener = null
         }
         binding.layoutSave.gone()
         binding.cardTtsControls.gone()
@@ -259,8 +220,7 @@ class MainActivity : AppCompatActivity() {
             serverManager = serverClient,
             onError = {
                 binding.btnMic.apply {
-                    isEnabled = true
-                    clearAnimation()
+                    isEnabled = true; clearAnimation()
                     backgroundTintList = android.content.res.ColorStateList.valueOf(
                         ContextCompat.getColor(this@MainActivity, R.color.colorPrimary)
                     )
@@ -269,11 +229,7 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    // ======================================================
-    // UI HELPERS
-    // ======================================================
-
-    private fun setResultAreaHint(hint: String) {
+    private fun setResultHint(hint: String) {
         binding.txtResult.hint = SpannableString(hint).apply {
             setSpan(StyleSpan(android.graphics.Typeface.ITALIC), 0, hint.length, 0)
         }
@@ -287,15 +243,7 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    // ======================================================
-    // LIFECYCLE
-    // ======================================================
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         permissionManager.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
